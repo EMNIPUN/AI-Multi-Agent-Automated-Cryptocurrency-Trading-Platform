@@ -2,6 +2,7 @@
 
 from agent.config import load_settings
 from agent.runner import AgentRunner
+from agent.telemetry_ledger import TelemetryLedger
 from bot.client import create_session
 from bot.config import API_KEY, API_SECRET
 
@@ -16,8 +17,12 @@ def main() -> None:
         print("AGENT_ENABLED=false — enable it in .env to run the agent.")
         return
 
+    import os
+
+    ledger_path = os.getenv("OBSERVABILITY_LEDGER_PATH", "data/observability_ledger.sqlite")
+    telemetry = TelemetryLedger(ledger_path)
     session = create_session()
-    AgentRunner(session, settings).run_forever()
+    AgentRunner(session, settings, telemetry=telemetry).run_forever()
 
 
 if __name__ == "__main__":

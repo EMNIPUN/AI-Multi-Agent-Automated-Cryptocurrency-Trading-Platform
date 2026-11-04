@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dark is the product default */
+:root,
+.dark {
+  --background: 222 47% 6%;
+  --foreground: 210 40% 96%;
+  --card: 222 40% 9%;
+  --card-foreground: 210 40% 96%;
+  --popover: 222 40% 9%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 160 84% 39%;
+  --primary-foreground: 160 100% 6%;
+  --secondary: 217 33% 14%;
+  --secondary-foreground: 210 40% 96%;
+  --muted: 217 28% 12%;
+  --muted-foreground: 215 16% 65%;
+  --accent: 217 70% 55%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 217 25% 18%;
+  --input: 217 25% 18%;
+  --ring: 160 84% 39%;
+  --radius: 0.75rem;
+  --profit: 160 84% 39%;
+  --loss: 0 72% 51%;
+  --warning: 38 92% 50%;
+  --ai: 271 76% 63%;
+  --electric: 217 91% 60%;
+  --surface-glow-a: 160 55% 28%;
+  --surface-glow-b: 217 75% 42%;
+  --panel-shadow: 0 1px 0 hsl(210 40% 98% / 0.04);
+}
+
+/* Light: cool fintech daylight — not washed grey-on-white */
+.light {
+  --background: 210 28% 97%;
+  --foreground: 222 35% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 35% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 35% 12%;
+  --primary: 163 72% 28%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 30% 93%;
+  --secondary-foreground: 222 30% 18%;
+  --muted: 210 25% 94%;
+  --muted-foreground: 215 16% 38%;
+  --accent: 214 78% 42%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 70% 42%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 22% 86%;
+  --input: 214 22% 86%;
+  --ring: 163 72% 28%;
+  --profit: 163 72% 28%;
+  --loss: 0 70% 42%;
+  --warning: 32 90% 38%;
+  --ai: 271 55% 42%;
+  --electric: 214 78% 42%;
+  --surface-glow-a: 163 45% 72%;
+  --surface-glow-b: 214 70% 78%;
+  --panel-shadow: 0 1px 2px hsl(222 30% 20% / 0.06), 0 8px 24px hsl(222 30% 20% / 0.04);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(1100px 560px at 8% -12%, hsl(var(--surface-glow-a) / 0.22), transparent 58%),
+      radial-gradient(900px 480px at 100% 0%, hsl(var(--surface-glow-b) / 0.18), transparent 52%),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
+  }
+
+  .light body,
+  html.light body {
+    background-image:
+      radial-gradient(1000px 520px at 0% -8%, hsl(var(--surface-glow-a) / 0.45), transparent 55%),
+      radial-gradient(860px 460px at 100% 0%, hsl(var(--surface-glow-b) / 0.4), transparent 50%),
+      linear-gradient(180deg, hsl(210 32% 98%), hsl(210 24% 95%));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    border: 1px solid hsl(var(--border) / 0.85);
+    background-color: hsl(var(--card) / 0.88);
+    box-shadow: var(--panel-shadow);
+    backdrop-filter: blur(12px);
+  }
+
+  .light .glass-panel {
+    background-color: hsl(0 0% 100% / 0.94);
+    border-color: hsl(var(--border));
+  }
+}
+
+.light .app-sidebar {
+  background-color: hsl(0 0% 100% / 0.92);
+}
+
+.light .app-topbar {
+  background-color: hsl(0 0% 100% / 0.9);
+}
+
+.react-flow__controls,
+.react-flow__minimap {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border-bottom-color: hsl(var(--border)) !important;
+  fill: hsl(var(--foreground)) !important;
+}
+
+/* Light-mode sample / warning surfaces */
+.light .border-amber-500\/40 {
+  border-color: hsl(32 90% 38% / 0.35) !important;
+}
+.light .bg-amber-500\/10,
+.light .text-amber-400 {
+  color: hsl(32 90% 32%) !important;
+}

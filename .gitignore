@@ -82,6 +82,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # --- Local databases ---
+data/
 *.db
 *.sqlite
 *.sqlite3

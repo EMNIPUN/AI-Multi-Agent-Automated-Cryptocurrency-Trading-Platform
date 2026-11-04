@@ -22,15 +22,35 @@ Research-first trading platform built around Bybit. Current codebase is an inter
 
 ## Setup
 
+Preferred (locked deps via `uv.lock`):
+
 ```powershell
 cd "E:\Financial Side\Trading\AI-Multi-Agent-Automated-Cryptocurrency-Trading-Platform"
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+uv sync --group dev
 copy .env.example .env
 ```
 
-Edit `.env` with your API key/secret.
+Fallback without `uv`:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+copy .env.example .env
+```
+
+Edit `.env` with your API key/secret. Never put database passwords or Supabase service-role keys in Next.js `NEXT_PUBLIC_*` variables.
+
+### Read-only FastAPI (Phase 2A)
+
+```powershell
+uv run uvicorn apps.api.main:app --host 127.0.0.1 --port 8000
+```
+
+- `GET /health` — liveness (no secrets / no Bybit)
+- `GET /api/v1/system/status` — safe status metadata
+
+PostgreSQL/Supabase is optional for those routes. Migrations are **manual** (`apps/api/alembic`); see `apps/api/README.md`.
 
 | Setting | Meaning |
 |---|---|
@@ -112,11 +132,13 @@ Logs: `logs/agent_YYYYMMDD.csv`
 
 ## Project layout
 
+Current trading code (unchanged entry points):
+
 ```
 main.py              # manual terminal menus
 run_agent.py         # automated agent entry
-test_connection.py   # auth check
-bot/                 # shared Bybit helpers
+test_connection.py   # auth check (not a unit test)
+bot/                 # shared Bybit helpers + CLI trading
 agent/
   config.py          # agent .env settings
   market_data.py     # candles + indicators
@@ -125,4 +147,22 @@ agent/
   executor.py        # dry-run / place orders
   journal.py         # CSV logs
   runner.py          # main loop
+tests/               # offline mocked unit tests
 ```
+
+Monorepo scaffolding (structure only; apps not implemented yet):
+
+```
+apps/api/            # future FastAPI
+apps/web/            # future Next.js + TypeScript
+apps/worker/         # future agent/job workers
+packages/            # future shared libraries
+research/            # offline research / backtests
+docs/architecture/   # structure & design docs
+docs/implementation/ # phase / restructure reports
+docs/audits/         # audit index
+scripts/             # dev helpers
+infra/               # future compose / CI / deploy
+```
+
+See `docs/architecture/REPOSITORY_STRUCTURE.md` for current vs future migration notes.

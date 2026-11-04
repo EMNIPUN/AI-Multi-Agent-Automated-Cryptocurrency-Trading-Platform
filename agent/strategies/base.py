@@ -16,3 +16,7 @@ class Signal:
     ema_fast: float | None = None
     ema_slow: float | None = None
     rsi: float | None = None
+    # Confirmed-bar metadata (Phase 1D); 0 / "" when not applicable.
+    candle_start_ms: int = 0
+    candle_close_ms: int = 0
+    signal_id: str = ""

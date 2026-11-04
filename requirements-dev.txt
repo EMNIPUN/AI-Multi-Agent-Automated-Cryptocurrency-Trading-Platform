@@ -1,0 +1,6 @@
+# Canonical deps: pyproject.toml + uv.lock (dependency-groups.dev)
+# Prefer: uv sync --group dev
+# Fallback without uv:
+-r requirements.txt
+pytest>=8.0.0
+httpx>=0.27.0

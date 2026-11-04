@@ -1,0 +1,30 @@
+-- Phase 2D ownership / RLS plan (implemented in Alembic 20261104_0002)
+-- Review artifact — apply only via operator-approved Alembic upgrade.
+--
+-- Model:
+--   owner_user_id UUID NULL  ==  Supabase Auth user id (JWT sub)
+--   NULL owner_user_id       ==  legacy / unowned → inaccessible to ordinary users
+--   env_scope / account_fp   !=  ownership proof
+--
+-- Keep schema `app` out of Supabase Data API Exposed schemas.
+-- Do NOT GRANT USAGE ON SCHEMA app TO anon, authenticated.
+--
+-- Application authorization (FastAPI WHERE owner_user_id = :principal)
+-- is PRIMARY. RLS is defense in depth for non-bypass roles.
+-- Table owner / postgres / bypassrls roles still see all rows unless FORCE RLS.
+--
+-- Connection pooling: FastAPI must NOT SET request.jwt.claim.sub / SET ROLE
+-- on pooled connections without RESET — prefer application filters only.
+--
+-- Future (not in 2D):
+--   organizations / team membership tables
+--   exchange_accounts.owner_user_id or org_id
+--   strategy uniqueness already scoped per owner_user_id
+
+-- Columns + indexes + RLS are in:
+--   apps/api/alembic/versions/20261104_0002_ownership_rls.py
+-- Offline SQL review:
+--   apps/api/sql/review/20261104_0002_ownership_rls.sql
+
+-- Until operator approves migration AND security tests:
+--   PRIVATE_DATA_READS_ENABLED must remain false (default).

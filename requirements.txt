@@ -1,2 +1,12 @@
+# Canonical deps: pyproject.toml + uv.lock
+# Prefer: uv sync
+# Fallback without uv:
 pybit>=5.17.0
 python-dotenv>=1.0.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+sqlalchemy>=2.0.36
+alembic>=1.14.0
+psycopg[binary]>=3.2.0
+pydantic-settings>=2.6.0
+PyJWT[crypto]>=2.9.0

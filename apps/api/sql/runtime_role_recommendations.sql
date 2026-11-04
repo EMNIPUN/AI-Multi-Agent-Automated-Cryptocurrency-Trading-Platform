@@ -1,0 +1,27 @@
+-- Phase 2D — least-privilege runtime role recommendations (NOT auto-applied)
+--
+-- Goal: FastAPI should eventually connect as a non-superuser role that cannot
+-- bypass RLS, while migrations remain a separate elevated operator path.
+--
+-- Do NOT run against production without explicit operator approval.
+-- Do NOT grant these roles to anon / browser clients.
+-- Keep schema `app` excluded from Supabase Data API Exposed schemas.
+
+-- Example role (name is a recommendation only):
+--   CREATE ROLE cryptonova_api_runtime NOINHERIT LOGIN;
+--   GRANT USAGE ON SCHEMA app TO cryptonova_api_runtime;
+--   GRANT SELECT ON ALL TABLES IN SCHEMA app TO cryptonova_api_runtime;
+--   ALTER DEFAULT PRIVILEGES IN SCHEMA app
+--     GRANT SELECT ON TABLES TO cryptonova_api_runtime;
+--
+-- Prefer SELECT-only for Phase 2D read APIs. Writers/agents use a separate path.
+--
+-- Never:
+--   GRANT ALL ON SCHEMA app TO anon, authenticated;
+--   ALTER ROLE cryptonova_api_runtime BYPASSRLS;
+--   Put service_role or postgres password in Next.js / NEXT_PUBLIC_* env.
+--
+-- RLS policies in 20261104_0002 target Supabase role `authenticated` for
+-- Data API defense. FastAPI with a custom runtime role needs matching policies
+-- TO cryptonova_api_runtime (or SET ROLE) — until then, application WHERE
+-- filters remain the authoritative isolation control.

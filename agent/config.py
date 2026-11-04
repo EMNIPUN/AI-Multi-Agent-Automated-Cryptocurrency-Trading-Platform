@@ -43,6 +43,9 @@ class AgentSettings:
     take_profit_pct: float
     stop_loss_pct: float
     candle_limit: int
+    candle_finalize_grace_ms: int
+    max_clock_skew_ms: int
+    max_candle_staleness_ms: int  # 0 = derive from interval
 
 
 def load_settings() -> AgentSettings:
@@ -75,6 +78,9 @@ def load_settings() -> AgentSettings:
         take_profit_pct=max(0.1, _float("AGENT_TP_PCT", "1.5")),
         stop_loss_pct=max(0.1, _float("AGENT_SL_PCT", "1.0")),
         candle_limit=max(50, _int("AGENT_CANDLE_LIMIT", "120")),
+        candle_finalize_grace_ms=max(0, _int("AGENT_CANDLE_GRACE_MS", "2000")),
+        max_clock_skew_ms=max(0, _int("AGENT_MAX_CLOCK_SKEW_MS", "5000")),
+        max_candle_staleness_ms=max(0, _int("AGENT_MAX_CANDLE_STALENESS_MS", "0")),
     )
 
 
