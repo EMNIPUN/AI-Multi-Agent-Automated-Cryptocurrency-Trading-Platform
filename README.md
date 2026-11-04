@@ -1,270 +1,128 @@
-# Multi-Agent Crypto Trading Platform
+# AI Multi-Agent Automated Cryptocurrency Trading Platform
 
-**A research-driven AI multi-agent cryptocurrency trading and automation platform.**
+Research-first trading platform built around Bybit. Current codebase is an interactive terminal app for **spot** and **USDT perpetual futures**, plus a **rule-based automated agent** (EMA + RSI) with risk controls. Multi-agent FastAPI / Next.js services are planned next.
 
-An intelligent trading system designed to analyze cryptocurrency markets, evaluate multiple strategies, manage risk, and automate trading through exchange APIs.
+## Features
 
-> **Project Status:** Early Development / Research Prototype  
-> **Primary Exchange:** Bybit  
-> **Initial Markets:** Spot and USDT Perpetual Futures  
-> **Current Focus:** Architecture, research infrastructure, backend integration, and frontend development
+### Manual terminal (`main.py`)
+- Spot & futures market data (ticker, order book, candles)
+- Unified account balance
+- Spot market / limit buy & sell
+- Futures long / short, leverage, close position, optional TP/SL
+- Open orders, cancel one / cancel all
+- Qty & price rounded to exchange filters
+- Confirmation before every order
 
----
+### Automated agent (`run_agent.py`)
+- EMA fast/slow crossover + RSI filter
+- Dry-run by default (no orders)
+- Risk: equity %, max positions, daily loss kill switch, TP/SL on futures
+- CSV journal under `logs/`
+- Mainnet live orders blocked unless `AGENT_ALLOW_LIVE=true`
 
-## Overview
+## Setup
 
-The Multi-Agent Crypto Trading Platform is a full-stack software engineering and artificial intelligence project focused on building a modular, research-driven automated trading system.
-
-The platform combines:
-
-- Smart Money Concepts (SMC)
-- Technical Analysis (EMA, RSI, MACD, ATR)
-- Multi-Agent Decision Coordination
-- AI and Machine Learning Research
-- Independent Risk Management
-- Automated Trade Execution
-- Portfolio Monitoring
-- Historical Backtesting
-- Paper Trading and Exchange Testnet Validation
-
-The long-term goal is to develop a secure and scalable trading automation platform that can eventually support commercial SaaS deployment.
-
-## Project Objectives
-
-1. Develop a modular multi-agent trading architecture.
-2. Integrate cryptocurrency market data through Bybit APIs.
-3. Implement independent SMC and technical analysis strategies.
-4. Develop a strategy coordinator for trading decisions.
-5. Establish deterministic risk management and order execution controls.
-6. Build a research environment for strategy backtesting.
-7. Develop a web dashboard for monitoring and configuration.
-8. Evaluate machine learning and reinforcement learning methods.
-9. Validate the system through paper trading and Testnet.
-10. Prepare the architecture for future commercial SaaS development.
-
-## System Architecture
-
-```text
-                WEB DASHBOARD
-                Next.js / React
-                       |
-                       v
-                BACKEND API
-                  FastAPI
-                       |
-                       v
-             PLATFORM ORCHESTRATOR
-                       |
-                       v
-                MARKET DATA LAYER
-                Bybit REST / WS
-                       |
-             +---------+---------+
-             |                   |
-             v                   v
-       TECHNICAL AGENT       SMC AGENT
-       EMA / RSI / MACD      BOS / FVG / OB
-             |                   |
-             +---------+---------+
-                       |
-                       v
-              STRATEGY COORDINATOR
-                       |
-                       v
-              INDEPENDENT RISK ENGINE
-                       |
-                       v
-                EXECUTION SERVICE
-                       |
-                       v
-               BYBIT API GATEWAY
-                       |
-                       v
-              PORTFOLIO MONITORING
-
-      Supporting Infrastructure:
-      PostgreSQL | Research | Logs | Alerts
+```powershell
+cd "E:\Financial Side\Trading\AI-Multi-Agent-Automated-Cryptocurrency-Trading-Platform"
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env
 ```
 
-## Core Modules
+Edit `.env` with your API key/secret.
 
-### 1. Market Data
-
-- Historical and live cryptocurrency data
-- OHLCV candlesticks
-- Order book data
-- Market data validation
-- Exchange instrument metadata
-
-### 2. Technical Analysis Agent
-
-- Exponential Moving Averages (EMA)
-- Relative Strength Index (RSI)
-- MACD
-- Average True Range (ATR)
-- Trend and momentum analysis
-
-### 3. Smart Money Concepts Agent
-
-- Market structure
-- Break of Structure (BOS)
-- Change of Character (CHoCH)
-- Order Blocks (OB)
-- Fair Value Gaps (FVG)
-- Liquidity sweeps
-
-### 4. Strategy Coordinator
-
-- Independent strategy evaluation
-- Hybrid strategy evaluation
-- Signal conflict resolution
-- Explainable trade proposals
-
-### 5. Risk Management
-
-- Position sizing
-- Risk-per-trade limits
-- Portfolio exposure limits
-- Stop-loss validation
-- Daily loss limits
-- Emergency shutdown
-- Persistent risk state
-
-### 6. Trading Execution
-
-- Bybit API integration
-- Spot trading
-- USDT perpetual futures
-- Order lifecycle management
-- Partial-fill handling
-- Duplicate-order prevention
-- Order and position reconciliation
-
-### 7. Research Platform
-
-- Historical backtesting
-- Walk-forward validation
-- Paper trading
-- Performance analytics
-- Strategy comparisons
-- AI and reinforcement learning experiments
-
-### 8. Web Dashboard
-
-Planned features:
-
-- Trading overview
-- Live market monitoring
-- Agent status and decisions
-- Strategy configuration
-- Trade history
-- Portfolio performance
-- Risk monitoring
-- System logs and alerts
-
-## Technology Stack
-
-| Layer | Technology |
+| Setting | Meaning |
 |---|---|
-| Frontend | Next.js, React, TypeScript |
-| Styling | Tailwind CSS |
-| Backend | Python, FastAPI |
-| Exchange Integration | Bybit V5 API, Pybit |
-| Data Analysis | Pandas, NumPy |
-| AI / Machine Learning | PyTorch, Scikit-learn |
-| Database | PostgreSQL |
-| Historical Data | Parquet |
-| Deployment | Docker |
-| Version Control | Git and GitHub |
+| `BYBIT_TESTNET=true` | Testnet (`api-testnet.bybit.com`) — recommended |
+| `BYBIT_TESTNET=false` | Live mainnet — real money |
+| `BYBIT_DEMO=true` | Demo Trading (`api-demo.bybit.com`) |
 
-Technology choices may evolve during research and implementation.
+API keys are **not interchangeable** across testnet / mainnet / demo.  
+Create keys with **Read + Trade** (no withdrawal needed).
 
-## Development Roadmap
+## Run manual trader
 
-### Phase 1 — Foundation
-- [ ] Initialize repository and development workflow
-- [ ] Audit and secure existing Python bot
-- [ ] Establish backend architecture
-- [ ] Establish frontend architecture
-- [ ] Implement configuration and environment separation
+```powershell
+python test_connection.py
+python main.py
+```
 
-### Phase 2 — Trading Research
-- [ ] Historical market data pipeline
-- [ ] EMA/RSI baseline strategy
-- [ ] Rule-based SMC strategy
-- [ ] Backtesting framework
-- [ ] Performance evaluation
+## Run automated agent
 
-### Phase 3 — Multi-Agent System
-- [ ] Technical Analysis Agent
-- [ ] SMC Analysis Agent
-- [ ] Strategy Coordinator
-- [ ] Structured agent communication
-- [ ] Independent risk engine
+Recommended path:
 
-### Phase 4 — Trading Automation
-- [ ] Paper trading
-- [ ] Bybit Testnet integration
-- [ ] Order lifecycle management
-- [ ] Portfolio monitoring
-- [ ] Failure recovery and emergency controls
+1. **Testnet + dry-run** (signals only)
+2. **Testnet + dry-run off** (real testnet orders)
+3. Optional **mainnet** only with `AGENT_ALLOW_LIVE=true` after proven results
 
-### Phase 5 — Advanced AI
-- [ ] Market regime analysis
-- [ ] Machine learning predictions
-- [ ] Reinforcement learning experiments
-- [ ] Multi-agent optimization research
+```powershell
+# 1) Dry-run (default)
+# AGENT_DRY_RUN=true
+python run_agent.py
 
-### Phase 6 — Platform Development
-- [ ] Web dashboard
-- [ ] Agent configuration interface
-- [ ] Trading analytics
-- [ ] Authentication and access controls
-- [ ] Monitoring and alerts
+# 2) Testnet live agent orders
+# BYBIT_TESTNET=true
+# AGENT_DRY_RUN=false
+# AGENT_ALLOW_LIVE=false   # not needed on testnet
+python run_agent.py
 
-### Phase 7 — Commercial Readiness
-- [ ] Security review
-- [ ] Multi-tenant architecture
-- [ ] SaaS infrastructure
-- [ ] Legal and regulatory assessment
-- [ ] Controlled product release
+# 3) Mainnet live (dangerous)
+# BYBIT_TESTNET=false
+# AGENT_DRY_RUN=false
+# AGENT_ALLOW_LIVE=true
+python run_agent.py
+```
 
-## Research Methodology
+Useful agent settings (see `.env.example`):
 
-The project will compare:
+| Setting | Default | Meaning |
+|---|---|---|
+| `AGENT_ENABLED` | true | Master switch |
+| `AGENT_DRY_RUN` | true | Log only, no orders |
+| `AGENT_ALLOW_LIVE` | false | Required for mainnet real orders |
+| `AGENT_CATEGORY` | linear | `linear` or `spot` |
+| `AGENT_SYMBOLS` | HYPEUSDT | Comma-separated symbols |
+| `AGENT_INTERVAL` | 15 | Kline minutes |
+| `AGENT_POLL_SECONDS` | 60 | Loop delay |
+| `AGENT_RISK_PCT` | 1.0 | % equity (margin budget) per new trade |
+| `AGENT_LEVERAGE` | 3 | Futures leverage |
+| `AGENT_DAILY_LOSS_PCT` | 3.0 | Kill switch vs day-start equity |
+| `AGENT_TP_PCT` / `AGENT_SL_PCT` | 1.5 / 1.0 | Futures take-profit / stop-loss |
 
-1. EMA/RSI trading strategies
-2. Rule-based SMC trading strategies
-3. Hybrid SMC and technical analysis strategies
-4. Multi-agent coordinated strategies
-5. Selected machine learning and reinforcement learning models
+Logs: `logs/agent_YYYYMMDD.csv`
 
-Evaluation will include net profitability after trading costs, maximum drawdown, risk-adjusted returns, robustness, and operational reliability.
+## Manual menu map
 
-## Security
+1. Spot market data  
+2. Futures market data  
+3. Account balance  
+4. Futures positions  
+5. Spot trading  
+6. Futures trading  
 
-- Never commit exchange API keys or secrets.
-- Use separate Testnet and Mainnet credentials.
-- Disable withdrawal permissions on trading API keys.
-- Enforce independent risk management.
-- Keep live automated trading disabled until validation.
-- Use explicit authorization for production execution.
-- Maintain audit logs and emergency controls.
+## Safety
 
-## Current Development Status
+- Prefer **testnet** or **demo** until you are comfortable.
+- Agent defaults to **dry-run**; mainnet needs an extra live flag.
+- Small accounts cannot trade large min-size perps (e.g. BTCUSDT `0.001`).
+- Manual mainnet orders require typing `yes`.
+- Futures use one-way mode (`positionIdx=0`).
+- Trading involves risk; use at your own responsibility. No profit is guaranteed.
 
-The existing Python prototype includes Bybit connectivity, manual trading functionality, and an early EMA/RSI automation loop.
+## Project layout
 
-The complete multi-agent system, research platform, and web dashboard are under development.
-
-## Disclaimer
-
-This project is intended for software engineering, quantitative finance research, and educational experimentation.
-
-Automated cryptocurrency trading involves substantial financial risk. No strategy or AI model guarantees profitability. Backtesting and simulated results do not guarantee future performance.
-
-## License
-
-Copyright © 2026. All rights reserved.
-
-No open-source license has been granted at this stage.
+```
+main.py              # manual terminal menus
+run_agent.py         # automated agent entry
+test_connection.py   # auth check
+bot/                 # shared Bybit helpers
+agent/
+  config.py          # agent .env settings
+  market_data.py     # candles + indicators
+  strategies/        # EMA+RSI strategy
+  risk.py            # sizing + kill switch
+  executor.py        # dry-run / place orders
+  journal.py         # CSV logs
+  runner.py          # main loop
+```
