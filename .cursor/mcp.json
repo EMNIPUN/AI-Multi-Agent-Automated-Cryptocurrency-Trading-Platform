@@ -6,6 +6,9 @@
     "tradingview": {
       "type": "http",
       "url": "https://mcp.tradingview.com/mcp"
+    },
+    "motion": {
+      "url": "https://mcp.motion.dev"
     }
   }
 }

@@ -16,6 +16,21 @@
 --
 -- Prefer SELECT-only for Phase 2D read APIs. Writers/agents use a separate path.
 --
+-- --- Phase 3C Part 6C (NOT EXECUTED) — binding persistence role sketch ---
+-- Migration role (elevated, operator-only): Alembic DDL; never used by FastAPI pool.
+-- Application role: cryptonova_api_runtime
+--   GRANT USAGE ON SCHEMA app TO cryptonova_api_runtime;
+--   GRANT SELECT, INSERT, UPDATE ON app.exchange_account_bindings TO cryptonova_api_runtime;
+--   -- Prefer no DELETE; revoke via status UPDATE to 'revoked'
+--   -- NO BYPASSRLS; add RLS policies TO cryptonova_api_runtime mirroring owner_user_id
+-- Per-request (transaction-local only):
+--   SELECT set_config('request.jwt.claim.sub', :<verified_sub>, true);
+--   -- or app.current_owner_user_id GUC consumed by RLS USING clause
+-- Pool checkout MUST reset GUCs / discard connection state (see session_identity.py).
+-- Do NOT enable EXCHANGE_BINDING_PERSISTENCE_ENABLED without:
+--   Auth E2E PASS, operator approval, least-privilege role applied,
+--   EXCHANGE_BINDING_PERSISTENCE_OPERATOR_APPROVED=true
+--
 -- Never:
 --   GRANT ALL ON SCHEMA app TO anon, authenticated;
 --   ALTER ROLE cryptonova_api_runtime BYPASSRLS;

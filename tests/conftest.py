@@ -1,5 +1,18 @@
 from __future__ import annotations
 
+import os
+
+# Offline unit tests use SQLAlchemy SQLite engines (no sqlite3 module in stores).
+# Production SoT remains Supabase when SUPABASE_SOT_ENABLED=true outside pytest.
+os.environ["SUPABASE_SOT_ENABLED"] = "false"
+
+try:
+    from apps.api.app.config import clear_settings_cache
+
+    clear_settings_cache()
+except Exception:  # noqa: BLE001
+    pass
+
 from agent.config import AgentSettings
 
 

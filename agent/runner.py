@@ -1,3 +1,4 @@
+import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +25,7 @@ from agent.signal_ids import correlation_id_from_signal
 from agent.signal_ledger import ProcessedSignal, SignalLedger
 from agent.strategies.base import SignalAction
 from agent.strategies.ema_rsi import EmaRsiStrategy
+from agent.strategies.evidence import evidence_payload
 from agent.order_lifecycle_observer import OrderLifecycleObserver
 from agent.telemetry_ledger import TelemetryLedger, make_event
 from bot.config import API_KEY, USE_DEMO, USE_TESTNET, env_label, is_live_mainnet
@@ -52,6 +54,9 @@ class AgentRunner:
         self.telemetry = telemetry
         self.env_scope = env_scope_id(use_testnet=USE_TESTNET, use_demo=USE_DEMO)
         self.account_fp = account_fingerprint(API_KEY)
+        # Public non-secret binding id for telemetry isolation (never API key / account_fp).
+        binding = (os.getenv("EXCHANGE_ACCOUNT_BINDING_ID") or "").strip()
+        self.telemetry_scope_id = binding or "operator-local"
         self._order_observer = OrderLifecycleObserver(
             intent_store=self.executor.store,
             env_scope=self.env_scope,
@@ -120,6 +125,7 @@ class AgentRunner:
                 interval=interval,
                 correlation_id=correlation_id,
                 env_scope=self.env_scope,
+                account_scope_label=self.telemetry_scope_id,
                 execution_mode=self._execution_mode(),
                 pipeline_step=pipeline_step,
                 payload=payload or {},
@@ -277,6 +283,7 @@ class AgentRunner:
                 )
                 continue
 
+            last_bar = filtered.candles[-1]
             self._observe(
                 ObservabilityEventType.MARKET_CANDLE_CONFIRMED,
                 event_id=f"market.candle_confirmed:{symbol}:{filtered.newest_close_ms}",
@@ -284,7 +291,30 @@ class AgentRunner:
                 symbol=symbol,
                 interval=filtered.interval,
                 pipeline_step=PipelineStep.CONFIRMED_CANDLE,
-                payload={"candle_close_at": datetime.fromtimestamp(filtered.newest_close_ms / 1000, tz=timezone.utc).isoformat()},
+                payload={
+                    "candle_close_at": datetime.fromtimestamp(
+                        filtered.newest_close_ms / 1000, tz=timezone.utc
+                    ).isoformat(),
+                    "candle_start_ms": last_bar.start,
+                    "candle_close_ms": filtered.newest_close_ms,
+                    "open": last_bar.open,
+                    "high": last_bar.high,
+                    "low": last_bar.low,
+                    "close": last_bar.close,
+                    "volume": last_bar.volume,
+                    # Compact recent confirmed closes for chart correlation (not invented).
+                    "recent_bars": [
+                        {
+                            "time": int(c.start // 1000),
+                            "open": c.open,
+                            "high": c.high,
+                            "low": c.low,
+                            "close": c.close,
+                            "volume": c.volume,
+                        }
+                        for c in filtered.candles[-40:]
+                    ],
+                },
             )
             signal = self.strategy.evaluate(
                 filtered.candles,
@@ -319,6 +349,7 @@ class AgentRunner:
                     f"sid={signal.signal_id or '-'}"
                 ),
             )
+            evidence = evidence_payload(signal, self.settings)
             self._observe(
                 ObservabilityEventType.ANALYSIS_COMPLETED,
                 event_id=f"analysis.completed:{symbol}:{signal.candle_close_ms or tick_id}",
@@ -327,11 +358,7 @@ class AgentRunner:
                 interval=filtered.interval,
                 correlation_id=signal.signal_id or None,
                 pipeline_step=PipelineStep.STRATEGY,
-                payload={
-                    "ema_fast": signal.ema_fast,
-                    "ema_slow": signal.ema_slow,
-                    "rsi": signal.rsi,
-                },
+                payload=evidence,
             )
             self._observe(
                 ObservabilityEventType.SIGNAL_GENERATED,
@@ -341,7 +368,11 @@ class AgentRunner:
                 interval=filtered.interval,
                 correlation_id=signal.signal_id or None,
                 pipeline_step=PipelineStep.SIGNAL,
-                payload={"action": signal.action.value},
+                payload={
+                    "action": signal.action.value,
+                    "price": signal.price,
+                    **evidence,
+                },
             )
 
             if snapshot.status is PositionStatus.UNKNOWN:

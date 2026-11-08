@@ -9,8 +9,8 @@ export function BorderBeam({
   className,
   size = 180,
   duration = 8,
-  colorFrom = "hsl(160 84% 45%)",
-  colorTo = "hsl(217 91% 60%)",
+  colorFrom = "#f59e0b",
+  colorTo = "#ffffff",
 }: {
   className?: string;
   size?: number;

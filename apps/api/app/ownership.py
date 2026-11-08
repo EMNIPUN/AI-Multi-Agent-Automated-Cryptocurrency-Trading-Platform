@@ -6,8 +6,8 @@ Ownership / tenant isolation (Phase 2D).
 - NULL owner_user_id rows stay inaccessible to ordinary users.
 - RLS is defense in depth; FastAPI owner filters are mandatory even if the DB
   role bypasses RLS (postgres / table owner / service_role).
-- Future: organization_id / team membership and exchange_account ownership will
-  layer on top of user ownership (not implemented in Phase 2D).
+- Phase 3C: exchange_account_bindings are a separate ownership surface from
+  catalog owner_user_id (migration 0002). See apps.api.app.exchange.bindings.
 """
 
 from __future__ import annotations

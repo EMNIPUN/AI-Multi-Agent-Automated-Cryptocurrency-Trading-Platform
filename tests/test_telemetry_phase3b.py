@@ -177,7 +177,8 @@ def test_worker_snapshot_denied_with_user_token(tmp_path: Path) -> None:
         headers={"Authorization": "Bearer good"},
     )
     assert resp.status_code == 403
-    assert resp.json()["detail"] == "worker_telemetry_not_bound_to_user"
+    # JWT path requires ownership binding + PRIVATE_DATA_READS (still off).
+    assert resp.json()["detail"] == "ownership_schema_required"
 
 
 def test_worker_snapshot_unavailable_without_ledger() -> None:

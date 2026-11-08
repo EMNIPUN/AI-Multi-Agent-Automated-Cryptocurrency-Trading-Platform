@@ -8,6 +8,7 @@ from agent.signal_ids import (
     strategy_config_identity,
 )
 from agent.strategies.base import Signal, SignalAction
+from agent.strategies.evidence import conditions_for_signal, explanation_code_for
 
 
 class EmaRsiStrategy:
@@ -48,6 +49,20 @@ class EmaRsiStrategy:
                 action=SignalAction.HOLD,
                 reason="Not enough confirmed candles",
                 price=closes[-1] if closes else 0.0,
+                explanation_code=explanation_code_for(
+                    SignalAction.HOLD, enough_bars=False, indicators_ready=False
+                ),
+                strategy_id=self.strategy_id,
+                strategy_version=self.strategy_version,
+                conditions=conditions_for_signal(
+                    self.settings,
+                    action=SignalAction.HOLD,
+                    cross_up=None,
+                    cross_down=None,
+                    rsi_value=None,
+                    indicators_ready=False,
+                    enough_bars=False,
+                ),
             )
 
         fast = ema(closes, self.settings.ema_fast)
@@ -72,6 +87,20 @@ class EmaRsiStrategy:
                 price=closes[i],
                 candle_start_ms=last.start,
                 candle_close_ms=close_ms,
+                explanation_code=explanation_code_for(
+                    SignalAction.HOLD, enough_bars=True, indicators_ready=False
+                ),
+                strategy_id=self.strategy_id,
+                strategy_version=self.strategy_version,
+                conditions=conditions_for_signal(
+                    self.settings,
+                    action=SignalAction.HOLD,
+                    cross_up=None,
+                    cross_down=None,
+                    rsi_value=None,
+                    indicators_ready=False,
+                    enough_bars=True,
+                ),
             )
 
         f0, f1 = fast[prev], fast[i]
@@ -109,6 +138,20 @@ class EmaRsiStrategy:
                 candle_start_ms=last.start,
                 candle_close_ms=close_ms,
                 signal_id=_sid(action),
+                explanation_code=explanation_code_for(
+                    action, enough_bars=True, indicators_ready=True
+                ),
+                strategy_id=self.strategy_id,
+                strategy_version=self.strategy_version,
+                conditions=conditions_for_signal(
+                    self.settings,
+                    action=action,
+                    cross_up=True,
+                    cross_down=False,
+                    rsi_value=r,
+                    indicators_ready=True,
+                    enough_bars=True,
+                ),
             )
 
         if cross_down and r > self.settings.rsi_oversold:
@@ -126,6 +169,20 @@ class EmaRsiStrategy:
                 candle_start_ms=last.start,
                 candle_close_ms=close_ms,
                 signal_id=_sid(action),
+                explanation_code=explanation_code_for(
+                    action, enough_bars=True, indicators_ready=True
+                ),
+                strategy_id=self.strategy_id,
+                strategy_version=self.strategy_version,
+                conditions=conditions_for_signal(
+                    self.settings,
+                    action=action,
+                    cross_up=False,
+                    cross_down=True,
+                    rsi_value=r,
+                    indicators_ready=True,
+                    enough_bars=True,
+                ),
             )
 
         return Signal(
@@ -137,6 +194,19 @@ class EmaRsiStrategy:
             rsi=r,
             candle_start_ms=last.start,
             candle_close_ms=close_ms,
-            # HOLD is not ledgered as an actionable signal_id.
             signal_id="",
+            explanation_code=explanation_code_for(
+                SignalAction.HOLD, enough_bars=True, indicators_ready=True
+            ),
+            strategy_id=self.strategy_id,
+            strategy_version=self.strategy_version,
+            conditions=conditions_for_signal(
+                self.settings,
+                action=SignalAction.HOLD,
+                cross_up=False,
+                cross_down=False,
+                rsi_value=r,
+                indicators_ready=True,
+                enough_bars=True,
+            ),
         )

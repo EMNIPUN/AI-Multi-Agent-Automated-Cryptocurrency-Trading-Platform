@@ -1,8 +1,12 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { ObservabilityEvent } from "@/lib/observability/types";
+
+import { studioSpring } from "../lib/motion-tokens";
 
 export function ReplayControls({
   enabled,
@@ -11,6 +15,8 @@ export function ReplayControls({
   total,
   speed,
   gap,
+  gapCount = 0,
+  largestGapMs = 0,
   onPlay,
   onPause,
   onPrev,
@@ -25,6 +31,8 @@ export function ReplayControls({
   total: number;
   speed: 0.5 | 1 | 2;
   gap: boolean;
+  gapCount?: number;
+  largestGapMs?: number;
   onPlay: () => void;
   onPause: () => void;
   onPrev: () => void;
@@ -33,9 +41,14 @@ export function ReplayControls({
   onScrub: (index: number) => void;
   onExit: () => void;
 }) {
+  const reduce = useReducedMotion();
   if (!enabled) return null;
+  const largestMinutes = Math.round(largestGapMs / 60_000);
   return (
-    <div className="mb-4 rounded-xl border border-[hsl(var(--ai)/0.45)] bg-[hsl(var(--ai)/0.08)] p-3">
+    <motion.div
+      layout={!reduce}
+      className="mb-4 rounded-2xl border border-[hsl(var(--ai)/0.45)] bg-[hsl(var(--ai)/0.08)] p-3 backdrop-blur-sm"
+    >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Badge variant="ai">REPLAY</Badge>
@@ -46,8 +59,12 @@ export function ReplayControls({
         </Button>
       </div>
       {gap ? (
-        <p className="mb-2 text-xs text-[hsl(var(--warning))]">
-          Replay history is empty or truncated by ledger retention.
+        <p className="mb-2 text-xs text-[hsl(var(--warning))]" role="status">
+          {total === 0
+            ? "Replay history is empty or truncated by ledger retention."
+            : `Replay gap warning: ${gapCount} chronological gap${gapCount === 1 ? "" : "s"} detected${
+                largestMinutes > 0 ? ` (largest ~${largestMinutes}m)` : ""
+              }. Missing intervals are not invented.`}
         </p>
       ) : null}
       <div className="flex flex-wrap items-center gap-2">
@@ -67,14 +84,15 @@ export function ReplayControls({
           Next
         </Button>
         {([0.5, 1, 2] as const).map((value) => (
-          <Button
-            key={value}
-            size="sm"
-            variant={speed === value ? "default" : "ghost"}
-            onClick={() => onSpeed(value)}
-          >
-            {value}x
-          </Button>
+          <motion.div key={value} whileTap={reduce ? undefined : { scale: 0.96 }} transition={studioSpring}>
+            <Button
+              size="sm"
+              variant={speed === value ? "default" : "ghost"}
+              onClick={() => onSpeed(value)}
+            >
+              {value}x
+            </Button>
+          </motion.div>
         ))}
         <input
           aria-label="Replay scrubber"
@@ -90,7 +108,7 @@ export function ReplayControls({
         </span>
       </div>
       <EventHint events={[]} />
-    </div>
+    </motion.div>
   );
 }
 

@@ -1,3 +1,5 @@
+"use client";
+
 import { BlurFade } from "@/components/magicui/blur-fade";
 
 export function PageHeader({
@@ -8,13 +10,18 @@ export function PageHeader({
   description?: string;
 }) {
   return (
-    <BlurFade className="mb-6">
-      <h1 className="font-display text-3xl tracking-tight md:text-4xl">{title}</h1>
-      {description ? (
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground md:text-base">
-          {description}
+    <BlurFade>
+      <header className="mb-6">
+        <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-amber-200/70">
+          CryptoNova
         </p>
-      ) : null}
+        <h1 className="text-metallic text-2xl font-medium tracking-tight md:text-3xl">{title}</h1>
+        {description ? (
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
+      </header>
     </BlurFade>
   );
 }

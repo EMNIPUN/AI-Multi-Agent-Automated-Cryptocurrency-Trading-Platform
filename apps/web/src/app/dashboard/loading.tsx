@@ -1,5 +1,3 @@
-import { LogoLoader } from "@/components/brand/LogoLoader";
-
 export default function DashboardLoading() {
-  return <LogoLoader fullScreen label="Loading dashboard…" />;
+  return <div className="min-h-[12vh]" aria-hidden />;
 }

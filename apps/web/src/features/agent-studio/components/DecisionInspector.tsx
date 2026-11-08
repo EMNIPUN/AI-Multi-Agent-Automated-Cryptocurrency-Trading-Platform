@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
+import { studioSoftSpring } from "../lib/motion-tokens";
 import { formatLocalAndUtc } from "../lib/time-formatters";
 import type { ExplainMode, StudioProjection, WorkflowStage } from "../types";
 
@@ -20,9 +21,14 @@ export function DecisionInspector({
 }) {
   const reduce = useReducedMotion();
   const candle = formatLocalAndUtc(projection.lastConfirmedCandleAt);
+  const strategy = projection.strategy;
+  const candleStartUtc =
+    strategy.candleStartMs != null
+      ? new Date(strategy.candleStartMs).toISOString()
+      : "Evidence unavailable";
 
   return (
-    <Card className="h-full border-[#253348] bg-[#101827]">
+    <Card className="h-full overflow-hidden border-[#253348] bg-[#101827]/95 shadow-[var(--panel-shadow)] backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-base">Why This Decision?</CardTitle>
         <CardDescription>
@@ -32,22 +38,42 @@ export function DecisionInspector({
       <CardContent className="space-y-4 text-sm">
         <AnimatePresence mode="wait">
           <motion.div
-            key={`${projection.signalAction}-${stage?.id ?? "none"}-${explainMode}`}
-            initial={reduce ? false : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reduce ? undefined : { opacity: 0 }}
-            transition={{ duration: 0.22 }}
+            key={`${projection.signalAction}-${stage?.id ?? "none"}-${explainMode}-${strategy.explanationCode}`}
+            initial={reduce ? false : { opacity: 0, y: 10, filter: "blur(4px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            exit={reduce ? undefined : { opacity: 0, y: -6 }}
+            transition={studioSoftSpring}
             className="space-y-4"
           >
+            <Section title="Evidence freshness">
+              <Row
+                label="Label"
+                value={
+                  projection.evidenceFreshness === "fresh"
+                    ? "Fresh"
+                    : projection.evidenceFreshness === "stale"
+                      ? "Stale / unknown"
+                      : "Unavailable"
+                }
+              />
+              <Row label="Heartbeat" value={projection.heartbeatStale ? "Stale" : "Fresh"} />
+            </Section>
+
             <Section title="Market context">
               <Row label="Symbol" value={projection.symbol} />
               <Row label="Timeframe" value={`${projection.interval}m`} />
               <Row label="Confirmed candle" value={candle.utc} />
-              <Row
-                label="Freshness"
-                value={projection.heartbeatStale ? "Stale / unknown" : "Heartbeat fresh"}
-              />
+              <Row label="Candle open (UTC)" value={candleStartUtc} />
               <Row label="Environment" value={projection.executionMode} />
+            </Section>
+
+            <Section title="Strategy identity">
+              <Row label="Strategy" value={strategy.strategyId ?? "Evidence unavailable"} />
+              <Row label="Version" value={strategy.strategyVersion ?? "Evidence unavailable"} />
+              <Row
+                label="Explanation code"
+                value={strategy.explanationCode ?? "Evidence unavailable"}
+              />
             </Section>
 
             <Section title="Technical indicators">
@@ -64,35 +90,55 @@ export function DecisionInspector({
                 value={projection.rsi != null ? String(projection.rsi) : "Evidence unavailable"}
               />
               {explainMode === "advanced" ? (
-                <Row
-                  label="Trend hint"
-                  value={
-                    projection.emaFast != null && projection.emaSlow != null
-                      ? projection.emaFast > projection.emaSlow
-                        ? "Fast above slow (observed values)"
-                        : "Fast at/below slow (observed values)"
-                      : "Evidence unavailable"
-                  }
-                />
+                <>
+                  <Row
+                    label="EMA periods"
+                    value={
+                      strategy.emaFastPeriod != null && strategy.emaSlowPeriod != null
+                        ? `${strategy.emaFastPeriod} / ${strategy.emaSlowPeriod}`
+                        : "Evidence unavailable"
+                    }
+                  />
+                  <Row
+                    label="RSI period / thresholds"
+                    value={
+                      strategy.rsiPeriod != null
+                        ? `${strategy.rsiPeriod} · OB ${strategy.rsiOverbought ?? "—"} / OS ${strategy.rsiOversold ?? "—"}`
+                        : "Evidence unavailable"
+                    }
+                  />
+                  <Row
+                    label="Trend hint"
+                    value={
+                      projection.emaFast != null && projection.emaSlow != null
+                        ? projection.emaFast > projection.emaSlow
+                          ? "Fast above slow (observed values)"
+                          : "Fast at/below slow (observed values)"
+                        : "Evidence unavailable"
+                    }
+                  />
+                </>
               ) : null}
             </Section>
 
             <Section title="Strategy conditions">
-              <Condition
-                label="Confirmed candle requirement"
-                result={projection.lastConfirmedCandleAt ? "PASS" : "UNKNOWN"}
-              />
-              <Condition
-                label="Indicator snapshot present"
-                result={
-                  projection.emaFast != null && projection.rsi != null ? "PASS" : "NOT EVALUATED"
-                }
-              />
-              <Condition
-                label="Entry / exit rule detail"
-                result="NOT EVALUATED"
-                note="Per-rule PASS/FAIL bits are not exported by the worker yet."
-              />
+              {strategy.conditions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Per-rule PASS/FAIL bits unavailable in this snapshot.
+                </p>
+              ) : (
+                strategy.conditions.map((condition) => (
+                  <Condition
+                    key={condition.id}
+                    label={condition.id}
+                    result={
+                      condition.result === "NOT_EVALUATED"
+                        ? "NOT EVALUATED"
+                        : condition.result
+                    }
+                  />
+                ))
+              )}
             </Section>
 
             <Section title="Signal">

@@ -2,68 +2,96 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark is the product default */
-:root,
-.dark {
-  --background: 222 47% 6%;
-  --foreground: 210 40% 96%;
-  --card: 222 40% 9%;
-  --card-foreground: 210 40% 96%;
-  --popover: 222 40% 9%;
-  --popover-foreground: 210 40% 96%;
-  --primary: 160 84% 39%;
-  --primary-foreground: 160 100% 6%;
-  --secondary: 217 33% 14%;
-  --secondary-foreground: 210 40% 96%;
-  --muted: 217 28% 12%;
-  --muted-foreground: 215 16% 65%;
-  --accent: 217 70% 55%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 217 25% 18%;
-  --input: 217 25% 18%;
-  --ring: 160 84% 39%;
-  --radius: 0.75rem;
-  --profit: 160 84% 39%;
-  --loss: 0 72% 51%;
-  --warning: 38 92% 50%;
-  --ai: 271 76% 63%;
-  --electric: 217 91% 60%;
-  --surface-glow-a: 160 55% 28%;
-  --surface-glow-b: 217 75% 42%;
-  --panel-shadow: 0 1px 0 hsl(210 40% 98% / 0.04);
+@keyframes tw-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 
-/* Light: cool fintech daylight — not washed grey-on-white */
+/*
+  Magic UI startup-template palette:
+  pure black, soft whites, amber announcement, subtle zinc borders.
+  Cyan kept as a light CryptoNova accent.
+*/
+:root,
+.dark {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 4%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 4%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 0 0% 4%;
+  --secondary: 0 0% 10%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 9%;
+  --muted-foreground: 0 0% 64%;
+  --accent: 32 60% 48%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 14%;
+  --input: 0 0% 14%;
+  --ring: 0 0% 80%;
+  --radius: 0.75rem;
+  --profit: 152 69% 42%;
+  --loss: 0 72% 51%;
+  --warning: 32 92% 50%;
+  --ai: 187 70% 55%;
+  --electric: 187 80% 50%;
+  --surface-glow-a: 32 55% 28%;
+  --surface-glow-b: 0 0% 18%;
+  --panel-shadow: 0 1px 0 hsl(0 0% 100% / 0.04), 0 16px 48px hsl(0 0% 0% / 0.55);
+  --sidebar-background: 0 0% 2%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 0 0% 98%;
+  --sidebar-primary-foreground: 0 0% 4%;
+  --sidebar-accent: 0 0% 10%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 0 0% 14%;
+  --sidebar-ring: 0 0% 80%;
+}
+
 .light {
-  --background: 210 28% 97%;
-  --foreground: 222 35% 12%;
+  --background: 0 0% 100%;
+  --foreground: 0 0% 6%;
   --card: 0 0% 100%;
-  --card-foreground: 222 35% 12%;
+  --card-foreground: 0 0% 6%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222 35% 12%;
-  --primary: 163 72% 28%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 210 30% 93%;
-  --secondary-foreground: 222 30% 18%;
-  --muted: 210 25% 94%;
-  --muted-foreground: 215 16% 38%;
-  --accent: 214 78% 42%;
+  --popover-foreground: 0 0% 6%;
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 40%;
+  --accent: 32 70% 40%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 70% 42%;
   --destructive-foreground: 0 0% 100%;
-  --border: 214 22% 86%;
-  --input: 214 22% 86%;
-  --ring: 163 72% 28%;
-  --profit: 163 72% 28%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 0 0% 20%;
+  --profit: 152 60% 32%;
   --loss: 0 70% 42%;
   --warning: 32 90% 38%;
-  --ai: 271 55% 42%;
-  --electric: 214 78% 42%;
-  --surface-glow-a: 163 45% 72%;
-  --surface-glow-b: 214 70% 78%;
-  --panel-shadow: 0 1px 2px hsl(222 30% 20% / 0.06), 0 8px 24px hsl(222 30% 20% / 0.04);
+  --ai: 187 55% 36%;
+  --electric: 187 60% 36%;
+  --surface-glow-a: 32 40% 88%;
+  --surface-glow-b: 0 0% 92%;
+  --panel-shadow: 0 1px 2px hsl(0 0% 0% / 0.05), 0 8px 24px hsl(0 0% 0% / 0.04);
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 0 0% 6%;
+  --sidebar-primary: 0 0% 9%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 0 0% 96%;
+  --sidebar-accent-foreground: 0 0% 9%;
+  --sidebar-border: 0 0% 90%;
+  --sidebar-ring: 0 0% 20%;
 }
 
 @layer base {
@@ -72,24 +100,74 @@
   }
 
   html {
-    @apply scroll-smooth;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(0 0% 100% / 0.18) transparent;
+  }
+
+  html.light {
+    scrollbar-color: hsl(0 0% 0% / 0.22) transparent;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 100% / 0.18);
+    border-radius: 999px;
+  }
+
+  html.light::-webkit-scrollbar-thumb,
+  html.light body::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 0% / 0.22);
+  }
+
+  html::-webkit-scrollbar-thumb:hover,
+  body::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 100% / 0.32);
+  }
+
+  html.light::-webkit-scrollbar-thumb:hover,
+  html.light body::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 0% / 0.35);
+  }
+
+  html::-webkit-scrollbar-button,
+  body::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     min-height: 100vh;
-    background-image:
-      radial-gradient(1100px 560px at 8% -12%, hsl(var(--surface-glow-a) / 0.22), transparent 58%),
-      radial-gradient(900px 480px at 100% 0%, hsl(var(--surface-glow-b) / 0.18), transparent 52%),
-      linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
+    background-color: hsl(var(--background));
+    scrollbar-width: thin;
+    scrollbar-color: hsl(0 0% 100% / 0.18) transparent;
   }
 
-  .light body,
+  /* Native date inputs have a large intrinsic min-width on Windows browsers */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  input[type="month"],
+  input[type="week"] {
+    max-width: 100%;
+    min-width: 0;
+  }
+
   html.light body {
-    background-image:
-      radial-gradient(1000px 520px at 0% -8%, hsl(var(--surface-glow-a) / 0.45), transparent 55%),
-      radial-gradient(860px 460px at 100% 0%, hsl(var(--surface-glow-b) / 0.4), transparent 50%),
-      linear-gradient(180deg, hsl(210 32% 98%), hsl(210 24% 95%));
+    scrollbar-color: hsl(0 0% 0% / 0.22) transparent;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -104,12 +182,156 @@
   }
 }
 
+@layer components {
+  .app-sidebar {
+    background: linear-gradient(180deg, hsl(0 0% 3%), hsl(0 0% 2%));
+    backdrop-filter: blur(16px);
+  }
+
+  /* Thin custom scrollbars (fallback where ScrollArea isn't used) */
+  [data-sidebar="sidebar"],
+  [data-sidebar="content"],
+  .cn-thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(0 0% 100% / 0.18) transparent;
+  }
+
+  [data-sidebar="sidebar"]::-webkit-scrollbar,
+  [data-sidebar="content"]::-webkit-scrollbar,
+  .cn-thin-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  [data-sidebar="sidebar"]::-webkit-scrollbar-track,
+  [data-sidebar="content"]::-webkit-scrollbar-track,
+  .cn-thin-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  [data-sidebar="sidebar"]::-webkit-scrollbar-thumb,
+  [data-sidebar="content"]::-webkit-scrollbar-thumb,
+  .cn-thin-scroll::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 100% / 0.18);
+    border-radius: 999px;
+  }
+
+  [data-sidebar="sidebar"]::-webkit-scrollbar-thumb:hover,
+  [data-sidebar="content"]::-webkit-scrollbar-thumb:hover,
+  .cn-thin-scroll::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 100% / 0.32);
+  }
+
+  [data-sidebar="sidebar"]::-webkit-scrollbar-button,
+  [data-sidebar="content"]::-webkit-scrollbar-button,
+  .cn-thin-scroll::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .app-topbar {
+    backdrop-filter: blur(16px);
+  }
+
+  .cn-glow-card {
+    @apply relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-[var(--panel-shadow)] backdrop-blur-xl transition-[border-color,box-shadow,transform] duration-300;
+  }
+
+  .cn-glow-card:hover {
+    border-color: hsl(0 0% 100% / 0.22);
+    box-shadow: var(--panel-shadow), 0 0 40px -18px hsl(32 60% 48% / 0.25);
+  }
+
+  .cn-nav-active {
+    background: linear-gradient(90deg, hsl(0 0% 100% / 0.1), hsl(0 0% 100% / 0.03));
+    color: hsl(0 0% 98%);
+    box-shadow: inset 2px 0 0 hsl(0 0% 98%);
+  }
+
+  .text-metallic {
+    @apply bg-gradient-to-b from-white from-30% to-white/40 bg-clip-text text-transparent;
+  }
+
+  .badge-intro {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-amber-200/90 shadow-[inset_0_-8px_10px_#ffffff0a];
+  }
+
+  .horizon-glow {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 100%, hsl(32 55% 28% / 0.35), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 50% 120%, hsl(0 0% 100% / 0.08), transparent 60%);
+  }
+}
+
 @layer utilities {
+  /*
+    shadcn shimmer utility — highlight sweeps across text via currentColor.
+    Usage: <p className="shimmer text-sm text-muted-foreground">Generating…</p>
+  */
+  .shimmer {
+    --shimmer-duration: 2s;
+    --shimmer-spread: calc(3ch + 40px);
+    --shimmer-angle: 20deg;
+    --shimmer-color: color-mix(in oklab, currentColor 35%, white);
+    background-image: linear-gradient(
+      var(--shimmer-angle),
+      transparent 0%,
+      transparent calc(50% - var(--shimmer-spread) / 2),
+      var(--shimmer-color) 50%,
+      transparent calc(50% + var(--shimmer-spread) / 2),
+      transparent 100%
+    );
+    background-size: 250% 100%;
+    background-repeat: no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    animation: tw-shimmer var(--shimmer-duration) linear infinite;
+  }
+
+  .shimmer-once {
+    animation-iteration-count: 1;
+  }
+
+  .shimmer-reverse {
+    animation-direction: reverse;
+  }
+
+  .shimmer-none {
+    background-image: none;
+    color: currentColor;
+    -webkit-text-fill-color: currentColor;
+    animation: none;
+  }
+
+  [data-slot="trace-line"][data-status="running"] > [data-slot="trace-title"] {
+    @apply shimmer;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shimmer,
+    [data-slot="trace-line"][data-status="running"] > [data-slot="trace-title"] {
+      background-image: none;
+      color: hsl(var(--muted-foreground));
+      -webkit-text-fill-color: hsl(var(--muted-foreground));
+      -webkit-background-clip: unset;
+      background-clip: unset;
+      animation: none;
+    }
+  }
+
   .glass-panel {
-    border: 1px solid hsl(var(--border) / 0.85);
-    background-color: hsl(var(--card) / 0.88);
+    border: 1px solid hsl(0 0% 100% / 0.1);
+    background-color: hsl(0 0% 100% / 0.03);
     box-shadow: var(--panel-shadow);
     backdrop-filter: blur(12px);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .glass-panel:hover {
+    border-color: hsl(0 0% 100% / 0.18);
   }
 
   .light .glass-panel {
@@ -119,11 +341,11 @@
 }
 
 .light .app-sidebar {
-  background-color: hsl(0 0% 100% / 0.92);
+  background-color: hsl(0 0% 100% / 0.95);
 }
 
 .light .app-topbar {
-  background-color: hsl(0 0% 100% / 0.9);
+  background-color: hsl(0 0% 100% / 0.92);
 }
 
 .react-flow__controls,
@@ -138,13 +360,4 @@
   background: transparent !important;
   border-bottom-color: hsl(var(--border)) !important;
   fill: hsl(var(--foreground)) !important;
-}
-
-/* Light-mode sample / warning surfaces */
-.light .border-amber-500\/40 {
-  border-color: hsl(32 90% 38% / 0.35) !important;
-}
-.light .bg-amber-500\/10,
-.light .text-amber-400 {
-  color: hsl(32 90% 32%) !important;
 }

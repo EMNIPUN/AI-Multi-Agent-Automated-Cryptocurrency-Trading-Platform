@@ -16,6 +16,7 @@ from apps.api.app.database_url import (
     normalize_database_url,
     redact_database_url,
 )
+from apps.api.app.runtime_db import resolve_application_database_url
 
 
 def _split_origins(value: str | list[str] | None) -> list[str]:
@@ -96,6 +97,133 @@ class ApiSettings(BaseSettings):
     exchange_wallet_reads_enabled: bool = Field(
         default=True, validation_alias="EXCHANGE_WALLET_READS_ENABLED"
     )
+    # Part 6A: binding list/create/revoke HTTP. Persistence to Postgres stays off
+    # until separate operator approval (in-memory fixture store only).
+    exchange_binding_api_enabled: bool = Field(
+        default=True, validation_alias="EXCHANGE_BINDING_API_ENABLED"
+    )
+    exchange_binding_persistence_enabled: bool = Field(
+        default=False, validation_alias="EXCHANGE_BINDING_PERSISTENCE_ENABLED"
+    )
+    # Part 6C: second gate — persistence flag alone must not write to Postgres.
+    exchange_binding_persistence_operator_approved: bool = Field(
+        default=False,
+        validation_alias="EXCHANGE_BINDING_PERSISTENCE_OPERATOR_APPROVED",
+    )
+    # Phase 4D — Supabase signal persistence (independent of binding persistence).
+    signal_supabase_writes_enabled: bool = Field(
+        default=False, validation_alias="SIGNAL_SUPABASE_WRITES_ENABLED"
+    )
+    signal_supabase_writes_operator_approved: bool = Field(
+        default=False,
+        validation_alias="SIGNAL_SUPABASE_WRITES_OPERATOR_APPROVED",
+    )
+    signal_cloud_sync_enabled: bool = Field(
+        default=False, validation_alias="SIGNAL_CLOUD_SYNC_ENABLED"
+    )
+    # Option A — least-privilege runtime DB (DISABLED until remote security gate).
+    # When false (default): FastAPI keeps using DATABASE_URL; no GUC identity attach.
+    runtime_db_identity_enabled: bool = Field(
+        default=False, validation_alias="RUNTIME_DB_IDENTITY_ENABLED"
+    )
+    # Future separate credential for cryptonova_api_runtime — unused until approved.
+    database_runtime_url: str | None = Field(
+        default=None, validation_alias="DATABASE_RUNTIME_URL"
+    )
+    database_migrator_url: str | None = Field(
+        default=None, validation_alias="DATABASE_MIGRATOR_URL"
+    )
+    # Prompt 65B — local paper journal read API (DISABLED by default).
+    # When false: status reports disabled; session/account routes return 503.
+    # Never mutates paper DB; never auto-attaches broker.
+    paper_read_api_enabled: bool = Field(
+        default=False, validation_alias="PAPER_READ_API_ENABLED"
+    )
+    paper_sqlite_path: str | None = Field(
+        default=None, validation_alias="PAPER_SQLITE_PATH"
+    )
+    # Prompt 68B — local backtest artifact READ API (DISABLED by default).
+    # GET-only discovery of saved 68A JSON reports; never runs a backtest.
+    backtest_read_api_enabled: bool = Field(
+        default=False, validation_alias="BACKTEST_READ_API_ENABLED"
+    )
+    backtest_results_dir: str | None = Field(
+        default=None, validation_alias="BACKTEST_RESULTS_DIR"
+    )
+    # Prompt 68C — controlled historical backtest RUN API (DISABLED by default).
+    # Explicit POST only; never enables live exchange execution.
+    backtest_run_api_enabled: bool = Field(
+        default=False, validation_alias="BACKTEST_RUN_API_ENABLED"
+    )
+    backtest_max_candles_per_run: int = Field(
+        default=5000, validation_alias="BACKTEST_MAX_CANDLES_PER_RUN"
+    )
+    backtest_max_range_ms: int = Field(
+        default=7_776_000_000, validation_alias="BACKTEST_MAX_RANGE_MS"
+    )  # 90 days
+    backtest_max_simultaneous_runs: int = Field(
+        default=1, validation_alias="BACKTEST_MAX_SIMULTANEOUS_RUNS"
+    )
+    backtest_max_queued_runs: int = Field(
+        default=2, validation_alias="BACKTEST_MAX_QUEUED_RUNS"
+    )
+    backtest_max_runtime_seconds: int = Field(
+        default=600, validation_alias="BACKTEST_MAX_RUNTIME_SECONDS"
+    )
+    # SQLite → Supabase SoT cutover: agent stores use Postgres when true (default).
+    supabase_sot_enabled: bool = Field(
+        default=True, validation_alias="SUPABASE_SOT_ENABLED"
+    )
+    # Prompt 69A — news intelligence (DEFAULT OFF; advisory storage only).
+    news_read_api_enabled: bool = Field(
+        default=False, validation_alias="NEWS_READ_API_ENABLED"
+    )
+    news_collection_enabled: bool = Field(
+        default=False, validation_alias="NEWS_COLLECTION_ENABLED"
+    )
+    news_alerts_enabled: bool = Field(
+        default=False, validation_alias="NEWS_ALERTS_ENABLED"
+    )
+    news_llm_enabled: bool = Field(
+        default=False, validation_alias="NEWS_LLM_ENABLED"
+    )
+    openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY")
+    cryptonova_llm_model: str | None = Field(
+        default=None, validation_alias="CRYPTONOVA_LLM_MODEL"
+    )
+    cryptonova_llm_timeout_seconds: float = Field(
+        default=20.0, validation_alias="CRYPTONOVA_LLM_TIMEOUT_SECONDS"
+    )
+    cryptonova_llm_max_calls_per_hour: int = Field(
+        default=20, validation_alias="CRYPTONOVA_LLM_MAX_CALLS_PER_HOUR"
+    )
+    cryptonova_llm_daily_budget_usd: float = Field(
+        default=1.0, validation_alias="CRYPTONOVA_LLM_DAILY_BUDGET_USD"
+    )
+    news_agent_advisory_enabled: bool = Field(
+        default=False, validation_alias="NEWS_AGENT_ADVISORY_ENABLED"
+    )
+    newsdata_api_key: str | None = Field(
+        default=None, validation_alias="NEWSDATA_API_KEY"
+    )
+    news_rss_feed_urls: str | None = Field(
+        default=None, validation_alias="NEWS_RSS_FEED_URLS"
+    )
+    news_telegram_enabled: bool = Field(
+        default=False, validation_alias="NEWS_TELEGRAM_ENABLED"
+    )
+    news_telegram_bot_token: str | None = Field(
+        default=None, validation_alias="NEWS_TELEGRAM_BOT_TOKEN"
+    )
+    news_telegram_chat_id: str | None = Field(
+        default=None, validation_alias="NEWS_TELEGRAM_CHAT_ID"
+    )
+    news_auto_collection_enabled: bool = Field(
+        default=False, validation_alias="NEWS_AUTO_COLLECTION_ENABLED"
+    )
+    news_collection_interval_seconds: int = Field(
+        default=900, validation_alias="NEWS_COLLECTION_INTERVAL_SECONDS"
+    )
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -123,7 +251,8 @@ class ApiSettings(BaseSettings):
             )
         return self.database_url.strip()  # type: ignore[union-attr]
 
-    def sqlalchemy_url(self) -> str:
+    def sqlalchemy_url_legacy(self) -> str:
+        """Privileged / admin DATABASE_URL path (Alembic + pre-Gate-63 FastAPI)."""
         raw = self.require_database_url()
         try:
             return normalize_database_url(
@@ -134,14 +263,33 @@ class ApiSettings(BaseSettings):
         except Exception as exc:  # noqa: BLE001
             raise DatabaseUrlError("DATABASE_URL could not be normalized") from exc
 
+    def sqlalchemy_url(self) -> str:
+        """
+        Application engine URL.
+
+        Default (RUNTIME_DB_IDENTITY_ENABLED=false): DATABASE_URL (unchanged behavior).
+        Future least-privilege mode: DATABASE_RUNTIME_URL only — no silent fallback.
+        """
+        return resolve_application_database_url(self)
+
     def database_url_info(self) -> DatabaseUrlInfo:
+        # Inspect the URL the application engine would actually use.
+        if self.runtime_db_identity_enabled:
+            raw = (self.database_runtime_url or "").strip()
+            if not raw:
+                raise DatabaseUrlError("database_runtime_url_required")
+            return inspect_database_url(
+                raw, require_ssl_for_remote=self.database_ssl_require
+            )
         return inspect_database_url(
             self.require_database_url(),
             require_ssl_for_remote=self.database_ssl_require,
         )
 
     def redacted_database_url(self) -> str:
-        if not self.database_configured:
+        if not self.database_configured and not (
+            self.runtime_db_identity_enabled and (self.database_runtime_url or "").strip()
+        ):
             return ""
         try:
             return redact_database_url(self.sqlalchemy_url())
@@ -149,9 +297,10 @@ class ApiSettings(BaseSettings):
             return "<invalid>"
 
     def remote_database_requires_ssl(self) -> bool:
-        if not self.database_configured:
+        try:
+            info = self.database_url_info()
+        except DatabaseUrlError:
             return False
-        info = self.database_url_info()
         return info.is_remote and bool(self.database_ssl_require)
 
     def engine_connect_args(self) -> dict:

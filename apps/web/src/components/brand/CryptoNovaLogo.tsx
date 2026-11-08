@@ -2,8 +2,10 @@ import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 
-/** Cropped emblem only (C + ring + candles + bot) — no wordmark. */
+/** Theme-aligned emblem (C + amber nova ring + candles) — no wordmark. */
 const MARK_SRC = "/brand/cryptonova-mark.png";
+/** Horizontal mark + CryptoNova wordmark for hero / marketing surfaces. */
+const LOGO_SRC = "/brand/cryptonova-logo.png";
 
 export function CryptoNovaMark({
   className,
@@ -18,8 +20,29 @@ export function CryptoNovaMark({
     <Image
       src={MARK_SRC}
       alt={alt}
-      width={817}
-      height={817}
+      width={1024}
+      height={1024}
+      priority={priority}
+      className={cn("h-auto w-full object-contain", className)}
+    />
+  );
+}
+
+export function CryptoNovaWordmark({
+  className,
+  priority = false,
+  alt = "CryptoNova",
+}: {
+  className?: string;
+  priority?: boolean;
+  alt?: string;
+}) {
+  return (
+    <Image
+      src={LOGO_SRC}
+      alt={alt}
+      width={1280}
+      height={720}
       priority={priority}
       className={cn("h-auto w-full object-contain", className)}
     />

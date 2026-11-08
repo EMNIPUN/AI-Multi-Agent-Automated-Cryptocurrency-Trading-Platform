@@ -8,7 +8,10 @@ export function Card({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("glass-panel rounded-xl text-card-foreground shadow-sm", className)}
+      className={cn(
+        "glass-panel rounded-2xl text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-300 hover:border-primary/30",
+        className,
+      )}
       {...props}
     />
   );

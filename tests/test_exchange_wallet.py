@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+from apps.api.app.auth.jwt_verifier import StaticMappingVerifier
+from apps.api.app.auth.principal import AuthenticatedPrincipal
 from apps.api.app.config import ApiSettings, clear_settings_cache
 from apps.api.app.exchange.wallet import parse_unified_wallet_response
 from apps.api.app.factory import create_app
@@ -18,6 +20,11 @@ def _settings(**kwargs) -> ApiSettings:
         private_data_reads_enabled=False,
         exchange_wallet_reads_enabled=True,
         observability_fixture_mode=True,
+        supabase_url="https://example.supabase.co",
+        auth_jwt_mode="hs256",
+        supabase_jwt_secret="test-only-hs256-secret-not-for-production-32b+",
+        supabase_jwt_audience="authenticated",
+        supabase_jwt_issuer="https://example.supabase.co/auth/v1",
     )
     base.update(kwargs)
     return ApiSettings(**base)
@@ -116,3 +123,28 @@ def test_wallet_endpoint_bybit_error() -> None:
     resp = TestClient(app).get("/api/v1/exchange/wallet")
     assert resp.status_code == 503
     assert resp.json()["detail"] == "bybit_wallet_unavailable"
+
+
+def test_wallet_rejects_user_jwt_and_forwarded_client() -> None:
+    clear_settings_cache()
+    app = create_app(_settings())
+    app.state.bybit_wallet_client = _FakeWallet(SAMPLE)
+    principal = AuthenticatedPrincipal(
+        user_id="11111111-1111-1111-1111-111111111111",
+        role="authenticated",
+    )
+    app.state.token_verifier = StaticMappingVerifier({"good": principal})
+    client = TestClient(app)
+    denied = client.get(
+        "/api/v1/exchange/wallet",
+        headers={"Authorization": "Bearer good"},
+    )
+    assert denied.status_code == 403
+    # JWT path never falls through to operator-local diagnostics.
+    assert denied.json()["detail"] == "ownership_schema_required"
+    forwarded = client.get(
+        "/api/v1/exchange/wallet",
+        headers={"X-Forwarded-For": "8.8.8.8"},
+    )
+    assert forwarded.status_code == 403
+    assert forwarded.json()["detail"] == "operator_diagnostic_proxy_forward_rejected"

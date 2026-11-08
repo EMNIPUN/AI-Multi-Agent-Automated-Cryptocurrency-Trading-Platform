@@ -1,11 +1,15 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import Literal
 
 
 class SignalAction(str, Enum):
     BUY = "BUY"
     SELL = "SELL"
     HOLD = "HOLD"
+
+
+ConditionResult = Literal["PASS", "FAIL", "NOT_EVALUATED", "UNKNOWN"]
 
 
 @dataclass(frozen=True)
@@ -20,3 +24,7 @@ class Signal:
     candle_start_ms: int = 0
     candle_close_ms: int = 0
     signal_id: str = ""
+    explanation_code: str = ""
+    strategy_id: str = ""
+    strategy_version: str = ""
+    conditions: tuple[tuple[str, ConditionResult], ...] = field(default_factory=tuple)

@@ -1,66 +1,198 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
-  Background,
-  Controls,
-  Handle,
-  MarkerType,
-  MiniMap,
-  Position,
-  ReactFlow,
-  type Edge,
-  type Node,
-  type NodeProps,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { memo, useMemo } from "react";
-import { motion, useReducedMotion } from "motion/react";
+  CircleAlertIcon,
+  CircleCheckIcon,
+  LoaderCircleIcon,
+  Workflow,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { BorderBeam } from "@/components/magicui/border-beam";
+import { Button } from "@/components/ui/button";
+import { CodeBlock, CodeBlockContent } from "@/components/ui/code-block";
+import { Shimmer } from "@/components/ui/shimmer";
+import {
+  Trace,
+  TraceCollapsible,
+  TraceCollapsibleContent,
+  TraceCollapsibleTrigger,
+  TraceIcon,
+  TraceLine,
+  TraceTitle,
+} from "@/components/ui/trace";
 import { cn } from "@/lib/utils";
 
 import type { WorkflowNodeState, WorkflowStage } from "../types";
 
-function stateVariant(state: WorkflowNodeState) {
-  if (state === "ACTIVE") return "ai" as const;
-  if (state === "COMPLETED") return "success" as const;
-  if (state === "BLOCKED" || state === "FAILED" || state === "HALTED") return "danger" as const;
-  if (state === "UNKNOWN" || state === "WAITING") return "warning" as const;
-  return "outline" as const;
+function stageStatus(state: WorkflowNodeState): "running" | "error" | "pending" | undefined {
+  if (state === "ACTIVE") return "running";
+  if (state === "BLOCKED" || state === "FAILED" || state === "HALTED") return "error";
+  if (state === "WAITING" || state === "IDLE" || state === "UNKNOWN" || state === "UNAVAILABLE") {
+    return "pending";
+  }
+  return undefined;
 }
 
-function StudioNodeCard({ data }: NodeProps) {
-  const reduce = useReducedMotion();
-  const stage = data.stage as WorkflowStage;
-  const selected = Boolean(data.selected);
+function stageEvidence(stage: WorkflowStage) {
+  return [
+    `stage: ${stage.id}`,
+    `label: ${stage.label}`,
+    `state: ${stage.state}`,
+    `summary: ${stage.summary || "no evidence"}`,
+    `description: ${stage.description || "—"}`,
+    `timestamp: ${stage.timestamp ? new Date(stage.timestamp).toISOString() : "no evidence"}`,
+    `events: ${stage.eventIds.length}`,
+  ].join("\n");
+}
+
+function StepRow({
+  stage,
+  selected,
+  onSelect,
+  streaming,
+}: {
+  stage: WorkflowStage;
+  selected: boolean;
+  onSelect: (id: string) => void;
+  streaming: boolean;
+}) {
+  const status = stageStatus(stage.state);
+  const done = status === undefined;
+  const running = status === "running" && streaming;
+  const command = stage.label;
+
+  // Match SubagentDemo StepRow: completed steps expand to CodeBlock output.
+  if (done || selected || status === "error") {
+    return (
+      <TraceCollapsible
+        open={selected}
+        onOpenChange={(next) => onSelect(next ? stage.id : "")}
+      >
+        <TraceCollapsibleTrigger className="w-full max-w-full">
+          <TraceLine status={done ? undefined : running ? "running" : status === "error" ? "error" : status}>
+            <TraceIcon>
+              {done ? (
+                <CircleCheckIcon />
+              ) : running ? (
+                <LoaderCircleIcon className="animate-spin" />
+              ) : status === "error" ? (
+                <CircleAlertIcon />
+              ) : (
+                <LoaderCircleIcon className="opacity-50" />
+              )}
+            </TraceIcon>
+            <TraceTitle>
+              {done
+                ? `Ran ${command}`
+                : running
+                  ? `Running ${command}`
+                  : status === "error"
+                    ? `Failed to run ${command}`
+                    : `Waiting on ${command}`}
+            </TraceTitle>
+          </TraceLine>
+        </TraceCollapsibleTrigger>
+        <TraceCollapsibleContent>
+          <CodeBlock size="sm">
+            <CodeBlockContent wrap className="max-h-64">
+              {stageEvidence(stage)}
+            </CodeBlockContent>
+          </CodeBlock>
+        </TraceCollapsibleContent>
+      </TraceCollapsible>
+    );
+  }
+
   return (
-    <div
-      className={cn(
-        "relative w-[200px] rounded-xl border px-3 py-2.5 shadow-sm",
-        selected ? "border-primary" : "border-[#253348]",
-        "bg-[#101827] text-foreground",
-      )}
-    >
-      <Handle type="target" position={Position.Top} className="!bg-primary/60" />
-      {stage.state === "ACTIVE" && !reduce ? (
-        <BorderBeam size={120} duration={7} className="rounded-xl" />
-      ) : null}
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] font-medium leading-snug">{stage.label}</p>
-        <Badge variant={stateVariant(stage.state)}>{stage.state}</Badge>
-      </div>
-      <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{stage.summary}</p>
-      <p className="mt-1 font-mono text-[9px] text-muted-foreground">
-        {stage.timestamp ? new Date(stage.timestamp).toISOString() : "no evidence"}
-      </p>
-      <Handle type="source" position={Position.Bottom} className="!bg-primary/60" />
-    </div>
+    <button type="button" className="text-left" onClick={() => onSelect(stage.id)}>
+      <TraceLine status={running ? "running" : status}>
+        <TraceIcon>
+          {running ? (
+            <LoaderCircleIcon className="animate-spin" />
+          ) : (
+            <LoaderCircleIcon className="opacity-40" />
+          )}
+        </TraceIcon>
+        <TraceTitle>
+          {running ? "Running" : "Waiting on"} {command}
+        </TraceTitle>
+      </TraceLine>
+    </button>
   );
 }
 
-const nodeTypes = { studio: memo(StudioNodeCard) };
+function SubagentRow({
+  stages,
+  selectedId,
+  onSelect,
+  streaming,
+}: {
+  stages: WorkflowStage[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  streaming: boolean;
+}) {
+  const done = stages.length > 0 && stages.every((s) => s.state === "COMPLETED");
+  const failed = stages.some(
+    (s) => s.state === "BLOCKED" || s.state === "FAILED" || s.state === "HALTED",
+  );
+  const running = !done && !failed && (streaming || stages.some((s) => s.state === "ACTIVE"));
+  const report = useMemo(() => {
+    const active = stages.find((s) => s.state === "ACTIVE");
+    if (active) return active.summary || active.description;
+    const blocked = stages.find(
+      (s) => s.state === "BLOCKED" || s.state === "FAILED" || s.state === "HALTED",
+    );
+    if (blocked) return blocked.summary || blocked.description;
+    if (done) return "The trading workflow subagent finished every stage with available evidence.";
+    return "The trading workflow subagent is waiting for the next stage evidence.";
+  }, [stages, done]);
 
+  const line = (
+    <TraceLine status={done ? undefined : running ? "running" : failed ? "error" : "pending"}>
+      <TraceIcon>
+        {done ? (
+          <CircleCheckIcon />
+        ) : running ? (
+          <LoaderCircleIcon className="animate-spin" />
+        ) : failed ? (
+          <CircleAlertIcon />
+        ) : (
+          <Workflow />
+        )}
+      </TraceIcon>
+      <TraceTitle>
+        {done ? "Ran" : running ? "Running" : failed ? "Failed to run" : "Preparing"} the trading
+        workflow subagent
+      </TraceTitle>
+    </TraceLine>
+  );
+
+  if (stages.length === 0) return line;
+
+  return (
+    <TraceCollapsible defaultOpen>
+      <TraceCollapsibleTrigger className="w-full max-w-full">{line}</TraceCollapsibleTrigger>
+      <TraceCollapsibleContent className="flex flex-col gap-3 text-foreground">
+        <Trace>
+          {stages.map((stage) => (
+            <StepRow
+              key={stage.id}
+              stage={stage}
+              selected={selectedId === stage.id}
+              onSelect={onSelect}
+              streaming={streaming}
+            />
+          ))}
+        </Trace>
+        {report ? <p className="text-sm text-white/70">{report}</p> : null}
+      </TraceCollapsibleContent>
+    </TraceCollapsible>
+  );
+}
+
+/** Workflow panel rebuilt as Subagent Trace (replaces React Flow grid). */
 export function StudioWorkflow({
   stages,
   selectedId,
@@ -72,87 +204,78 @@ export function StudioWorkflow({
   onSelect: (id: string) => void;
   demo?: boolean;
 }) {
-  const reduce = useReducedMotion();
-  const nodes: Node[] = useMemo(
-    () =>
-      stages.map((stage, i) => {
-        const col = i % 3;
-        const row = Math.floor(i / 3);
-        return {
-          id: stage.id,
-          type: "studio",
-          position: { x: col * 230, y: row * 130 },
-          data: { stage, selected: selectedId === stage.id },
-          selected: selectedId === stage.id,
-        };
-      }),
-    [stages, selectedId],
-  );
-
-  const edges: Edge[] = useMemo(
-    () =>
-      stages.slice(0, -1).map((stage, i) => {
-        const next = stages[i + 1];
-        const active =
-          !reduce &&
-          (stage.state === "ACTIVE" ||
-            stage.state === "COMPLETED" ||
-            next.state === "ACTIVE");
-        return {
-          id: `e-${stage.id}-${next.id}`,
-          source: stage.id,
-          target: next.id,
-          animated: Boolean(active && next.state === "ACTIVE"),
-          markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
-          style: { stroke: active ? "hsl(160 84% 39% / 0.7)" : "hsl(217 25% 32%)" },
-        };
-      }),
-    [stages, reduce],
-  );
+  const [replayKey, setReplayKey] = useState(0);
+  const streaming = stages.some((s) => s.state === "ACTIVE" || s.state === "WAITING");
 
   return (
-    <motion.div
-      layout
-      className="relative h-[420px] w-full overflow-hidden rounded-xl border border-[#253348] bg-[#080D19]"
-    >
-      {demo ? (
-        <div className="absolute right-2 top-2 z-10">
-          <Badge variant="sample">SAMPLE WORKFLOW</Badge>
+    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#080D19] p-5 md:p-6">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_40%)]" />
+      <div className="relative z-10 mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-amber-200/80">
+            Subagent trace
+          </p>
+          <h2 className="mt-1 text-lg font-medium tracking-tight text-white">
+            Trading workflow run
+          </h2>
+          <p className="mt-1 text-sm text-white/50">
+            Expand the subagent for each stage — same shape as the research-agent demo.
+          </p>
         </div>
-      ) : null}
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        fitView
-        proOptions={{ hideAttribution: true }}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable
-        onNodeClick={(_, node) => onSelect(node.id)}
-        onPaneClick={() => onSelect("")}
-      >
-        <Background gap={18} size={1} color="hsl(217 25% 18%)" />
-        <MiniMap pannable zoomable maskColor="hsl(222 47% 6% / 0.7)" className="!bg-card" />
-        <Controls showInteractive={false} />
-      </ReactFlow>
-      <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
-        {stages.map((stage) => (
-          <button
-            key={stage.id}
-            type="button"
-            className={cn(
-              "rounded border px-2 py-1 text-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              selectedId === stage.id
-                ? "border-primary bg-primary/15 text-primary"
-                : "border-[#253348] text-muted-foreground hover:text-foreground",
-            )}
-            onClick={() => onSelect(stage.id)}
-          >
-            {stage.label.split(" ")[0]}
-          </button>
-        ))}
+        <div className="flex flex-wrap items-center gap-2">
+          {demo ? <Badge variant="sample">SAMPLE WORKFLOW</Badge> : null}
+          <Badge variant="outline" className="rounded-full">
+            {stages.length} stages
+          </Badge>
+        </div>
       </div>
-    </motion.div>
+
+      <div
+        key={replayKey}
+        className="relative z-10 flex min-h-72 w-full flex-col gap-4 rounded-2xl border border-white/10 bg-black/40 p-4 text-sm"
+      >
+        {streaming ? (
+          <Shimmer className="text-xs">Generating response…</Shimmer>
+        ) : null}
+
+        <Trace>
+          <SubagentRow
+            stages={stages}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            streaming={streaming}
+          />
+        </Trace>
+
+        <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
+          {stages.map((stage) => (
+            <button
+              key={stage.id}
+              type="button"
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-[10px] transition-colors",
+                selectedId === stage.id
+                  ? "border-white bg-white text-black"
+                  : "border-white/15 text-white/55 hover:border-white/30 hover:text-white",
+              )}
+              onClick={() => onSelect(stage.id)}
+            >
+              {stage.label.split(" ")[0]}
+            </button>
+          ))}
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto rounded-full"
+            onClick={() => {
+              onSelect("");
+              setReplayKey((k) => k + 1);
+            }}
+          >
+            Replay
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

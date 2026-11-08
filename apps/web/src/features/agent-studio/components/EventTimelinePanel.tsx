@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Pause, Play } from "lucide-react";
 
-import { AnimatedList } from "@/components/magicui/animated-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +12,30 @@ import type { ObservabilityEvent } from "@/lib/observability/types";
 
 import { categorizeEvent } from "../lib/workflow-projector";
 import type { EventCategory } from "../types";
+
+async function copyText(value: string): Promise<void> {
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+  } catch {
+    // fall through
+  }
+  try {
+    const el = document.createElement("textarea");
+    el.value = value;
+    el.setAttribute("readonly", "");
+    el.style.position = "fixed";
+    el.style.left = "-9999px";
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand("copy");
+    document.body.removeChild(el);
+  } catch {
+    // Clipboard unavailable — silent fail; avoid console overlay noise.
+  }
+}
 
 const CATEGORIES: Array<EventCategory | "ALL"> = [
   "ALL",
@@ -30,11 +53,15 @@ export function EventTimelinePanel({
   selectedEventId,
   onSelect,
   onJumpStage,
+  onJumpChart,
+  candleTimes,
 }: {
   events: ObservabilityEvent[];
   selectedEventId: string | null;
   onSelect: (eventId: string) => void;
   onJumpStage: (eventType: string) => void;
+  onJumpChart?: (eventId: string) => void;
+  candleTimes?: Set<number>;
 }) {
   const reduce = useReducedMotion();
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("ALL");
@@ -103,19 +130,22 @@ export function EventTimelinePanel({
         {filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground">No events match this filter.</p>
         ) : (
-          <AnimatedList className={autoScroll ? undefined : "pointer-events-auto"}>
+          <div className="flex flex-col">
             <AnimatePresence initial={false}>
               {filtered.map((event) => {
                 const cat = categorizeEvent(event.event_type);
                 const selected = selectedEventId === event.event_id;
                 return (
-                  <motion.button
+                  <motion.div
                     key={event.event_id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     layout={!reduce}
-                    initial={reduce ? false : { opacity: 0, y: 10 }}
+                    initial={reduce ? false : { opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`mb-2 w-full rounded-lg border px-3 py-2 text-left ${
+                    exit={reduce ? undefined : { opacity: 0, height: 0 }}
+                    transition={{ duration: 0.18 }}
+                    className={`mb-2 w-full cursor-pointer rounded-lg border px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       selected
                         ? "border-primary bg-primary/10"
                         : "border-[#253348] bg-[#080D19]/60 hover:border-primary/40"
@@ -123,6 +153,13 @@ export function EventTimelinePanel({
                     onClick={() => {
                       onSelect(event.event_id);
                       onJumpStage(event.event_type);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onSelect(event.event_id);
+                        onJumpStage(event.event_type);
+                      }
                     }}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -141,17 +178,38 @@ export function EventTimelinePanel({
                         className="underline-offset-2 hover:underline"
                         onClick={(e) => {
                           e.stopPropagation();
-                          void navigator.clipboard.writeText(event.event_id);
+                          void copyText(event.event_id);
                         }}
                       >
                         copy id
                       </button>
+                      {onJumpChart ? (
+                        <button
+                          type="button"
+                          className="underline-offset-2 hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const startMs = event.payload.candle_start_ms;
+                            const time =
+                              typeof startMs === "number" ? Math.floor(startMs / 1000) : null;
+                            if (
+                              time == null ||
+                              (candleTimes && candleTimes.size > 0 && !candleTimes.has(time))
+                            ) {
+                              return;
+                            }
+                            onJumpChart(event.event_id);
+                          }}
+                        >
+                          show on chart
+                        </button>
+                      ) : null}
                     </div>
-                  </motion.button>
+                  </motion.div>
                 );
               })}
             </AnimatePresence>
-          </AnimatedList>
+          </div>
         )}
       </ScrollArea>
     </div>

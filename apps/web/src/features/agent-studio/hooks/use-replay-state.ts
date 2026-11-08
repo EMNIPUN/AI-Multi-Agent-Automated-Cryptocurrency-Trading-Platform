@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { AgentSnapshot, ObservabilityEvent } from "@/lib/observability/types";
 
-import { projectStudio, sliceEventsForReplay } from "../lib/workflow-projector";
+import { detectReplayGaps, projectStudio, sliceEventsForReplay } from "../lib/workflow-projector";
 import type { StudioProjection } from "../types";
 
 export function useReplayState(baseSnap: AgentSnapshot | null, enabled: boolean) {
@@ -12,6 +12,7 @@ export function useReplayState(baseSnap: AgentSnapshot | null, enabled: boolean)
     () => (baseSnap ? projectStudio(baseSnap).events : []),
     [baseSnap],
   );
+  const gaps = useMemo(() => detectReplayGaps(events), [events]);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<0.5 | 1 | 2>(1);
@@ -65,6 +66,8 @@ export function useReplayState(baseSnap: AgentSnapshot | null, enabled: boolean)
     setSpeed,
     events,
     projection,
-    gap: events.length === 0,
+    gap: events.length === 0 || gaps.hasGap,
+    gapCount: gaps.gapCount,
+    largestGapMs: gaps.largestGapMs,
   };
 }

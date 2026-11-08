@@ -7,12 +7,13 @@ Never writes the intent/execution databases. Never places or cancels orders.
 
 from __future__ import annotations
 
-import sqlite3
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from agent.intent_store import IntentStore, IntentStoreError
 from agent.order_intent import OrderIntent, OrderIntentState
@@ -130,7 +131,7 @@ class OrderLifecycleObserver:
                     self.account_fp,
                     limit=self.limit,
                 )
-            except (sqlite3.OperationalError, IntentStoreError) as exc:
+            except (SQLAlchemyError, IntentStoreError, OSError) as exc:
                 last_exc = exc
                 if "locked" in str(exc).lower() or "busy" in str(exc).lower():
                     time.sleep(self.busy_sleep_s * (attempt + 1))

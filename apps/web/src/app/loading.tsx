@@ -1,5 +1,7 @@
-import { LogoLoader } from "@/components/brand/LogoLoader";
-
+/**
+ * Keep route transitions light. A full-screen logo loader made tab switches feel stuck.
+ * Instant navigation feedback lives in RouteProgress (AppShell).
+ */
 export default function Loading() {
-  return <LogoLoader fullScreen label="Preparing terminal…" />;
+  return <div className="min-h-[12vh]" aria-hidden />;
 }

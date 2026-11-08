@@ -20,12 +20,15 @@ export function CandleChart({
   candles,
   markers,
   sample,
+  focusTime,
 }: {
   candles: CandleBar[];
   markers: SignalMarker[];
   sample: boolean;
+  focusTime?: number | null;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -45,6 +48,7 @@ export function CandleChart({
       width: ref.current.clientWidth,
       height: 320,
     });
+    chartRef.current = chart;
 
     const series: ISeriesApi<"Candlestick"> = chart.addCandlestickSeries({
       upColor: isLight ? "#0f766e" : "#10b981",
@@ -54,25 +58,30 @@ export function CandleChart({
       wickDownColor: isLight ? "#dc2626" : "#ef4444",
     });
 
-    series.setData(
-      candles.map((c) => ({
-        time: c.time as Time,
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-      })),
-    );
+    if (candles.length > 0) {
+      series.setData(
+        candles.map((c) => ({
+          time: c.time as Time,
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+        })),
+      );
+    }
 
-    const seriesMarkers: SeriesMarker<Time>[] = markers.map((m) => ({
-      time: m.time as Time,
-      position: m.action === "SELL" ? "aboveBar" : "belowBar",
-      color:
-        m.action === "BUY" ? "#0f7a5f" : m.action === "SELL" ? "#b42318" : "#b45309",
-      shape:
-        m.action === "BUY" ? "arrowUp" : m.action === "SELL" ? "arrowDown" : "circle",
-      text: sample || m.sample ? `SAMPLE ${m.action}` : m.label || m.action,
-    }));
+    const verified = new Set(candles.map((c) => c.time));
+    const seriesMarkers: SeriesMarker<Time>[] = markers
+      .filter((m) => verified.has(m.time))
+      .map((m) => ({
+        time: m.time as Time,
+        position: m.action === "SELL" ? "aboveBar" : "belowBar",
+        color:
+          m.action === "BUY" ? "#0f7a5f" : m.action === "SELL" ? "#b42318" : "#b45309",
+        shape:
+          m.action === "BUY" ? "arrowUp" : m.action === "SELL" ? "arrowDown" : "circle",
+        text: sample || m.sample ? `SAMPLE ${m.action}` : m.label || m.action,
+      }));
     series.setMarkers(seriesMarkers);
     chart.timeScale().fitContent();
 
@@ -83,17 +92,47 @@ export function CandleChart({
     return () => {
       window.removeEventListener("resize", onResize);
       chart.remove();
+      chartRef.current = null;
     };
   }, [candles, markers, sample]);
 
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || focusTime == null || candles.length === 0) return;
+    const span = Math.max(8, Math.floor(candles.length / 6));
+    chart.timeScale().setVisibleRange({
+      from: (focusTime - span * 900) as Time,
+      to: (focusTime + span * 900) as Time,
+    });
+  }, [focusTime, candles.length]);
+
   return (
-    <div className="relative h-[320px] w-full overflow-hidden rounded-lg border border-border/60 bg-card/40">
+    <div
+      className="relative h-[320px] w-full overflow-hidden rounded-lg border border-border/60 bg-card/40"
+      role="img"
+      aria-label={
+        candles.length === 0
+          ? "Candle chart unavailable"
+          : sample
+            ? "Sample candle chart"
+            : "Worker evidence candle chart"
+      }
+    >
       {sample ? (
         <div className="absolute right-2 top-2 z-10 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-mono text-[10px] text-amber-400">
           SAMPLE CHART
         </div>
       ) : null}
-      <div ref={ref} className="h-full w-full" />
+      {candles.length === 0 ? (
+        <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
+          Candle series unavailable in this snapshot. Markers are not invented without verified bars.
+        </div>
+      ) : (
+        <div ref={ref} className="h-full w-full" />
+      )}
+      <p className="absolute bottom-1 left-2 font-mono text-[9px] text-muted-foreground/80">
+        Charting by TradingView Lightweight Charts
+      </p>
     </div>
   );
 }

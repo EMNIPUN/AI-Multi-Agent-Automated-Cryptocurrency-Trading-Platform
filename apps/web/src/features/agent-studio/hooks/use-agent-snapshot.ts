@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { authHeaders } from "@/lib/auth/browser-access-token";
 import { localAgentFixture } from "@/lib/fixtures/agentSnapshot";
 import type { AgentSnapshot } from "@/lib/observability/types";
 
@@ -25,6 +26,7 @@ export function useAgentSnapshot(viewMode: StudioViewMode) {
       const res = await fetch(`/api/observability/snapshot?source=${source}`, {
         cache: "no-store",
         signal: controller.signal,
+        headers: source === "worker" ? await authHeaders() : undefined,
       });
       if (!res.ok) throw new Error(`snapshot_${res.status}`);
       const data = (await res.json()) as AgentSnapshot;
@@ -53,7 +55,8 @@ export function useAgentSnapshot(viewMode: StudioViewMode) {
           markers: [],
           notes: [
             "Worker telemetry unavailable or unauthorized.",
-            "SAMPLE was not mixed into this view.",
+            "LIVE never falls back to SAMPLE.",
+            "Owner-bound reads require a Bearer access token after migrations + PRIVATE_DATA_READS.",
           ],
         });
       }

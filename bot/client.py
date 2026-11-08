@@ -16,6 +16,18 @@ def create_session(
     ``create_write_session()`` so ambiguous network errors are not blindly
     retried (duplicate fill risk).
     """
+    # Correct local clock skew vs Bybit before signing (ErrCode 10002).
+    try:
+        from apps.api.app.exchange.bybit_clock import (
+            install_pybit_timestamp_patch,
+            sync_bybit_clock,
+        )
+
+        install_pybit_timestamp_patch()
+        sync_bybit_clock(force=False)
+    except Exception:  # noqa: BLE001 — session still usable if sync fails
+        pass
+
     return HTTP(
         testnet=USE_TESTNET and not USE_DEMO,
         demo=USE_DEMO,
@@ -25,7 +37,7 @@ def create_session(
         force_retry=force_retry,
         max_retries=max_retries,
         retry_delay=1,
-        recv_window=10000,
+        recv_window=20000,
     )
 
 

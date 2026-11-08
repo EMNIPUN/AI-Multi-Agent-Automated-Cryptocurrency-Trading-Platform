@@ -25,10 +25,6 @@ from apps.api.app.observability.types import (
 )
 
 
-_LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost", "testclient"}
-_LOOPBACK_BINDINGS = {"127.0.0.1", "::1", "localhost"}
-
-
 def _worker_snapshot_response(settings: ApiSettings):
     from agent.telemetry_ledger import TelemetryLedger, unavailable_snapshot
 
@@ -47,27 +43,39 @@ def _worker_snapshot_response(settings: ApiSettings):
     return ledger.snapshot()
 
 
-def _assert_operator_local_diagnostic(request: Request, settings: ApiSettings) -> None:
-    """
-    Fail closed for browser users and proxy-forwarded clients.
-
-    Uses the TCP peer from ASGI (request.client.host), not the Host header.
-    Rejects Authorization (no user↔exchange binding) and forwarded headers
-    that would imply the app is behind an untrusted proxy hop.
-    """
-    if request.headers.get("authorization"):
-        raise HTTPException(status_code=403, detail="worker_telemetry_not_bound_to_user")
-    if request.headers.get("x-forwarded-for") or request.headers.get("x-real-ip"):
-        raise HTTPException(status_code=403, detail="worker_telemetry_proxy_forward_rejected")
-    bind = (settings.api_host or "").strip().lower()
-    if bind not in _LOOPBACK_BINDINGS:
-        raise HTTPException(status_code=403, detail="worker_telemetry_bind_not_loopback")
-    peer = request.client.host if request.client else ""
-    if peer not in _LOOPBACK_HOSTS:
-        raise HTTPException(status_code=403, detail="worker_telemetry_loopback_only")
-
-
 router = APIRouter(prefix="/api/v1/observability", tags=["observability"])
+
+
+def _filter_snapshot_for_binding(snap: AgentSnapshot, telemetry_scope_id: str) -> AgentSnapshot:
+    """Fail closed: only events/markers evidenced for the verified telemetry scope."""
+    from agent.telemetry_ledger import unavailable_snapshot
+
+    events = [
+        e
+        for e in snap.events
+        if (e.account_scope_label or "") == telemetry_scope_id
+    ]
+    if not events:
+        return unavailable_snapshot(
+            "No telemetry events for the authorized exchange-account binding."
+        )
+    # Do not leak unscoped chart markers / orders from other tenants.
+    scoped_signal_times = {
+        int(e.payload["candle_start_ms"]) // 1000
+        for e in events
+        if str(getattr(e.event_type, "value", e.event_type)) == "signal.generated"
+        and isinstance(e.payload.get("candle_start_ms"), (int, float))
+    }
+    markers = [m for m in snap.markers if m.time in scoped_signal_times] if scoped_signal_times else []
+    return snap.model_copy(
+        update={
+            "events": events,
+            "markers": markers,
+            "orders": [],  # order table is operator ledger; ownership-bound order reads come later
+            "notes": list(snap.notes)
+            + ["Filtered to authorized exchange-account telemetry scope."],
+        }
+    )
 
 
 @router.get("/worker-snapshot", response_model=AgentSnapshot)
@@ -77,14 +85,26 @@ def worker_snapshot(
     cursor: str | None = Query(default=None, max_length=32),
 ) -> AgentSnapshot:
     """
-    Operator-local diagnostic snapshot.
+    Worker telemetry snapshot.
 
-    Rejects Authorization and non-loopback peers. Does not serve SAMPLE fixtures.
-    SSE stays disabled.
+    Access modes:
+    - Operator-local diagnostic (no Authorization, loopback peer only).
+    - Owner-bound authenticated read (JWT + active binding + PRIVATE_DATA_READS)
+      filtered to that binding's telemetry_scope_id.
+
+    Does not serve SAMPLE fixtures. SSE stays disabled.
+    Client-supplied account IDs are not accepted as ownership proof.
     """
+    from apps.api.app.exchange.access import ExchangeReadMode, resolve_exchange_read_context
+
     _ = cursor
-    _assert_operator_local_diagnostic(request, settings)
-    return _worker_snapshot_response(settings)
+    ctx = resolve_exchange_read_context(request, settings)
+    snap = _worker_snapshot_response(settings)
+    if ctx.mode is ExchangeReadMode.OWNER_BOUND:
+        if ctx.binding is None:
+            raise HTTPException(status_code=403, detail="exchange_binding_missing")
+        return _filter_snapshot_for_binding(snap, ctx.binding.telemetry_scope_id)
+    return snap
 
 
 @router.get("/status", response_model=ObservabilityStreamStatus)

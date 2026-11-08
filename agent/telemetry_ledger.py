@@ -9,20 +9,34 @@ Payloads are sanitized before insert. Account fingerprints are not stored.
 from __future__ import annotations
 
 import json
-import sqlite3
+import re
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
+from apps.api.app.persistence.ledger_models import ObservationEventRow
+from apps.api.app.persistence.owner import resolve_sot_owner_user_id
+from apps.api.app.persistence.sqlite_guard import (
+    agent_sessionmaker,
+    bootstrap_agent_schema,
+    create_agent_engine,
+)
 
 from apps.api.app.observability.types import (
     SCHEMA_VERSION,
     AgentRuntimeStatus,
     AgentSnapshot,
+    CandleBar,
     DataMode,
     ExecutionMode,
     ObservabilityEvent,
     ObservabilityEventType,
     OrderLifecycleItem,
     PipelineStep,
+    SignalMarker,
 )
 from apps.api.app.sanitize import sanitize_public_json
 
@@ -53,17 +67,23 @@ def make_event(
     interval: str | None = None,
     correlation_id: str | None = None,
     env_scope: str = "local",
+    account_scope_label: str | None = None,
     execution_mode: ExecutionMode = ExecutionMode.DRY_RUN,
     pipeline_step: PipelineStep | None = None,
     payload: dict | None = None,
 ) -> ObservabilityEvent:
+    # Non-secret scope only — never account_fp / API keys.
+    # Binding telemetry_scope_id is a UUID (36 chars); allow that explicitly.
+    scope = (account_scope_label or "operator-local").strip() or "operator-local"
+    if not _is_allowed_telemetry_scope(scope):
+        scope = "operator-local"
     return ObservabilityEvent(
         event_id=event_id,
         event_type=event_type,
         occurred_at=_utc_now(),
         correlation_id=correlation_id,
         env_scope=env_scope,
-        account_scope_label="operator-local",
+        account_scope_label=scope,
         symbol=symbol,
         interval=interval,
         execution_mode=execution_mode,
@@ -91,69 +111,58 @@ class TelemetryLedger:
     def __init__(self, path: str | Path, *, max_rows: int = _MAX_ROWS) -> None:
         self.path = Path(path)
         self.max_rows = max_rows
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._init()
-
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.path)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    def _init(self) -> None:
-        with self._connect() as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS observation_events (
-                    seq INTEGER PRIMARY KEY AUTOINCREMENT,
-                    event_id TEXT NOT NULL UNIQUE,
-                    event_type TEXT NOT NULL,
-                    occurred_at TEXT NOT NULL,
-                    correlation_id TEXT,
-                    env_scope TEXT NOT NULL,
-                    account_scope_label TEXT,
-                    symbol TEXT,
-                    interval TEXT,
-                    execution_mode TEXT NOT NULL,
-                    pipeline_step TEXT,
-                    message TEXT NOT NULL,
-                    payload_json TEXT NOT NULL
-                )
-                """
-            )
+        self._owner = resolve_sot_owner_user_id()
+        self._engine = create_agent_engine(path)
+        bootstrap_agent_schema(self._engine)
+        self._Session = agent_sessionmaker(self._engine)
+        self._lock = threading.RLock()
 
     def record(self, event: ObservabilityEvent) -> bool:
         payload = sanitize_public_json(event.payload)
         if not isinstance(payload, dict):
             payload = {}
         body = event.model_copy(update={"payload": payload, "account_scope_label": _scope_label(event)})
-        with self._connect() as conn:
-            cur = conn.execute(
-                """
-                INSERT OR IGNORE INTO observation_events (
-                    event_id, event_type, occurred_at, correlation_id, env_scope,
-                    account_scope_label, symbol, interval, execution_mode,
-                    pipeline_step, message, payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    body.event_id,
-                    body.event_type.value,
-                    body.occurred_at.astimezone(timezone.utc).isoformat(),
-                    body.correlation_id,
-                    body.env_scope,
-                    body.account_scope_label,
-                    body.symbol,
-                    body.interval,
-                    body.execution_mode.value,
-                    body.pipeline_step.value if body.pipeline_step else None,
-                    body.message[:500],
-                    json.dumps(body.payload, separators=(",", ":"), default=str),
-                ),
-            )
-            inserted = cur.rowcount == 1
-            if inserted:
-                self._trim(conn)
-            return inserted
+        with self._lock:
+            session = self._Session()
+            try:
+                exists = session.scalar(
+                    select(ObservationEventRow).where(
+                        ObservationEventRow.owner_user_id == self._owner,
+                        ObservationEventRow.event_id == body.event_id,
+                    )
+                )
+                if exists is not None:
+                    return False
+                session.add(
+                    ObservationEventRow(
+                        owner_user_id=self._owner,
+                        event_id=body.event_id,
+                        event_type=body.event_type.value,
+                        occurred_at=body.occurred_at.astimezone(timezone.utc).isoformat(),
+                        correlation_id=body.correlation_id,
+                        env_scope=body.env_scope,
+                        account_scope_label=body.account_scope_label,
+                        symbol=body.symbol,
+                        interval=body.interval,
+                        execution_mode=body.execution_mode.value,
+                        pipeline_step=(
+                            body.pipeline_step.value if body.pipeline_step else None
+                        ),
+                        message=body.message[:500],
+                        payload_json=body.payload,
+                    )
+                )
+                session.commit()
+                self._trim(session)
+                return True
+            except IntegrityError:
+                session.rollback()
+                return False
+            except SQLAlchemyError:
+                session.rollback()
+                raise
+            finally:
+                session.close()
 
     def safe_record(self, event: ObservabilityEvent) -> bool:
         try:
@@ -161,41 +170,66 @@ class TelemetryLedger:
         except Exception:
             return False
 
-    def _trim(self, conn: sqlite3.Connection) -> None:
-        conn.execute(
-            """
-            DELETE FROM observation_events
-            WHERE seq NOT IN (
-                SELECT seq FROM observation_events ORDER BY seq DESC LIMIT ?
+    def _trim(self, session) -> None:  # noqa: ANN001
+        keep = session.scalars(
+            select(ObservationEventRow.seq)
+            .where(ObservationEventRow.owner_user_id == self._owner)
+            .order_by(ObservationEventRow.seq.desc())
+            .limit(self.max_rows)
+        ).all()
+        if not keep:
+            return
+        session.execute(
+            delete(ObservationEventRow).where(
+                ObservationEventRow.owner_user_id == self._owner,
+                ObservationEventRow.seq.not_in(keep),
             )
-            """,
-            (self.max_rows,),
         )
+        session.commit()
 
     def count(self) -> int:
-        with self._connect() as conn:
-            row = conn.execute("SELECT COUNT(*) AS n FROM observation_events").fetchone()
-            return int(row["n"])
+        with self._lock:
+            session = self._Session()
+            try:
+                n = session.scalar(
+                    select(func.count())
+                    .select_from(ObservationEventRow)
+                    .where(ObservationEventRow.owner_user_id == self._owner)
+                )
+                return int(n or 0)
+            finally:
+                session.close()
 
     def since(self, cursor: str | None, *, limit: int = 200) -> list[ObservabilityEvent]:
         limit = max(1, min(limit, 500))
-        sql = "SELECT * FROM observation_events"
-        params: list[object] = []
-        if cursor and cursor.isdigit():
-            sql += " WHERE seq > ?"
-            params.append(int(cursor))
-        sql += " ORDER BY seq ASC LIMIT ?"
-        params.append(limit)
-        with self._connect() as conn:
-            rows = conn.execute(sql, params).fetchall()
-        return [_row_to_event(row) for row in rows]
+        with self._lock:
+            session = self._Session()
+            try:
+                stmt = (
+                    select(ObservationEventRow)
+                    .where(ObservationEventRow.owner_user_id == self._owner)
+                    .order_by(ObservationEventRow.seq.asc())
+                    .limit(limit)
+                )
+                if cursor and cursor.isdigit():
+                    stmt = stmt.where(ObservationEventRow.seq > int(cursor))
+                rows = session.scalars(stmt).all()
+                return [_row_to_event(r) for r in rows]
+            finally:
+                session.close()
 
     def latest_cursor(self) -> str | None:
-        with self._connect() as conn:
-            row = conn.execute("SELECT MAX(seq) AS seq FROM observation_events").fetchone()
-        if row is None or row["seq"] is None:
-            return None
-        return str(row["seq"])
+        with self._lock:
+            session = self._Session()
+            try:
+                seq = session.scalar(
+                    select(func.max(ObservationEventRow.seq)).where(
+                        ObservationEventRow.owner_user_id == self._owner
+                    )
+                )
+                return str(seq) if seq is not None else None
+            finally:
+                session.close()
 
     def snapshot(self, *, stale_after_seconds: int = 120, limit: int = 100) -> AgentSnapshot:
         events = self._newest(limit)
@@ -257,6 +291,8 @@ class TelemetryLedger:
         interval = (candle or latest).interval if (candle or latest) and (candle or latest).interval else "—"
         mode = latest.execution_mode if latest else ExecutionMode.DRY_RUN
         orders = _orders_from_events(events)
+        candles = _candles_from_events(events)
+        markers = _markers_from_events(events)
 
         return AgentSnapshot(
             schema_version=SCHEMA_VERSION,
@@ -284,8 +320,8 @@ class TelemetryLedger:
             current_pipeline_step=step,
             pipeline_blocked=blocked_pipe,
             pipeline_block_reason=risk_reasons[0] if blocked_pipe and risk_reasons else None,
-            candles=[],
-            markers=[],
+            candles=candles,
+            markers=markers,
             orders=orders,
             events=events,
             cursor=self.latest_cursor(),
@@ -293,30 +329,41 @@ class TelemetryLedger:
                 "Worker telemetry ledger. Not exchange authority.",
                 "HOLD is a signal, not a trade.",
                 "ACCEPTED is not FILLED.",
-                "No candle series is copied into this snapshot.",
+                "Candles/markers come only from recorded confirmed-bar evidence.",
             ],
         )
 
     def _last_of_type(self, kind: ObservabilityEventType) -> ObservabilityEvent | None:
-        with self._connect() as conn:
-            row = conn.execute(
-                """
-                SELECT * FROM observation_events
-                WHERE event_type = ?
-                ORDER BY seq DESC LIMIT 1
-                """,
-                (kind.value,),
-            ).fetchone()
-        return _row_to_event(row) if row else None
+        with self._lock:
+            session = self._Session()
+            try:
+                row = session.scalar(
+                    select(ObservationEventRow)
+                    .where(
+                        ObservationEventRow.owner_user_id == self._owner,
+                        ObservationEventRow.event_type == kind.value,
+                    )
+                    .order_by(ObservationEventRow.seq.desc())
+                    .limit(1)
+                )
+                return _row_to_event(row) if row else None
+            finally:
+                session.close()
 
     def _newest(self, limit: int) -> list[ObservabilityEvent]:
         limit = max(1, min(limit, 500))
-        with self._connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM observation_events ORDER BY seq DESC LIMIT ?",
-                (limit,),
-            ).fetchall()
-        return [_row_to_event(row) for row in reversed(rows)]
+        with self._lock:
+            session = self._Session()
+            try:
+                rows = session.scalars(
+                    select(ObservationEventRow)
+                    .where(ObservationEventRow.owner_user_id == self._owner)
+                    .order_by(ObservationEventRow.seq.desc())
+                    .limit(limit)
+                ).all()
+                return [_row_to_event(row) for row in reversed(rows)]
+            finally:
+                session.close()
 
 
 def unavailable_snapshot(reason: str) -> AgentSnapshot:
@@ -339,12 +386,38 @@ def unavailable_snapshot(reason: str) -> AgentSnapshot:
     )
 
 
+_UUID_SCOPE_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+def _is_allowed_telemetry_scope(label: str) -> bool:
+    """
+    Accept operator-local labels and binding UUIDs only.
+    Reject fingerprint-like or overlong secret-adjacent strings.
+    """
+    text = label.strip()
+    if not text or len(text) > 64:
+        return False
+    lowered = text.lower()
+    if lowered.startswith("fp") or lowered.startswith("fp:") or "account_fp" in lowered:
+        return False
+    if lowered == "operator-local":
+        return True
+    if _UUID_SCOPE_RE.fullmatch(text):
+        return True
+    # Short non-secret labels (env tags) — no colons that look like key material.
+    if len(text) <= 32 and ":" not in text and " " not in text:
+        return True
+    return False
+
+
 def _scope_label(event: ObservabilityEvent) -> str | None:
     label = event.account_scope_label or "operator-local"
-    lowered = label.lower()
-    if "fp" in lowered or len(label) > 32:
+    if not _is_allowed_telemetry_scope(label):
         return "operator-local"
-    return label
+    return label.strip()
 
 
 def _last(events: list[ObservabilityEvent], kind: ObservabilityEventType) -> ObservabilityEvent | None:
@@ -356,6 +429,86 @@ def _num(value: object) -> float | None:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return float(value)
     return None
+
+
+def _candles_from_events(events: list[ObservabilityEvent]) -> list[CandleBar]:
+    """Use the newest market.candle_confirmed recent_bars payload when present."""
+    for event in reversed(events):
+        if event.event_type is not ObservabilityEventType.MARKET_CANDLE_CONFIRMED:
+            continue
+        bars = event.payload.get("recent_bars")
+        if not isinstance(bars, list) or not bars:
+            # Single-bar fallback from OHLCV fields.
+            t = event.payload.get("candle_start_ms")
+            if isinstance(t, (int, float)):
+                return [
+                    CandleBar(
+                        time=int(t) // 1000,
+                        open=float(event.payload.get("open") or 0),
+                        high=float(event.payload.get("high") or 0),
+                        low=float(event.payload.get("low") or 0),
+                        close=float(event.payload.get("close") or 0),
+                        volume=_num(event.payload.get("volume")),
+                    )
+                ]
+            continue
+        out: list[CandleBar] = []
+        seen: set[int] = set()
+        for raw in bars:
+            if not isinstance(raw, dict):
+                continue
+            try:
+                time_s = int(raw["time"])
+                if time_s in seen:
+                    continue
+                seen.add(time_s)
+                out.append(
+                    CandleBar(
+                        time=time_s,
+                        open=float(raw["open"]),
+                        high=float(raw["high"]),
+                        low=float(raw["low"]),
+                        close=float(raw["close"]),
+                        volume=_num(raw.get("volume")),
+                    )
+                )
+            except (KeyError, TypeError, ValueError):
+                continue
+        out.sort(key=lambda b: b.time)
+        return out
+    return []
+
+
+def _markers_from_events(events: list[ObservabilityEvent]) -> list[SignalMarker]:
+    """Emit markers only when candle open-time evidence is present and verified."""
+    candle_times = {c.time for c in _candles_from_events(events)}
+    markers: list[SignalMarker] = []
+    for event in events:
+        if event.event_type is not ObservabilityEventType.SIGNAL_GENERATED:
+            continue
+        action = event.payload.get("action")
+        if action not in {"BUY", "SELL", "HOLD"}:
+            continue
+        start_ms = event.payload.get("candle_start_ms")
+        if not isinstance(start_ms, (int, float)):
+            # Do not invent chart time from occurred_at when bars exist.
+            continue
+        time_s = int(start_ms) // 1000
+        if candle_times and time_s not in candle_times:
+            continue
+        if not candle_times:
+            continue
+        price = _num(event.payload.get("price")) or 0.0
+        markers.append(
+            SignalMarker(
+                time=time_s,
+                action=action,  # type: ignore[arg-type]
+                price=price,
+                label=str(event.payload.get("explanation_code") or action),
+                sample=False,
+            )
+        )
+    return markers
 
 
 def _orders_from_events(events: list[ObservabilityEvent]) -> list[OrderLifecycleItem]:
@@ -417,22 +570,20 @@ def _order_rank(state: str) -> int:
     return order.get(state.upper(), 0)
 
 
-def _row_to_event(row: sqlite3.Row) -> ObservabilityEvent:
-    payload = json.loads(row["payload_json"] or "{}")
-    if not isinstance(payload, dict):
-        payload = {}
+def _row_to_event(row: ObservationEventRow) -> ObservabilityEvent:
+    payload = row.payload_json if isinstance(row.payload_json, dict) else {}
     return ObservabilityEvent(
         schema_version=SCHEMA_VERSION,
-        event_id=row["event_id"],
-        event_type=row["event_type"],
-        occurred_at=_parse_dt(row["occurred_at"]) or _utc_now(),
-        correlation_id=row["correlation_id"],
-        env_scope=row["env_scope"],
-        account_scope_label=row["account_scope_label"],
-        symbol=row["symbol"],
-        interval=row["interval"],
-        execution_mode=row["execution_mode"],
-        pipeline_step=row["pipeline_step"],
-        message=row["message"],
+        event_id=row.event_id,
+        event_type=row.event_type,
+        occurred_at=_parse_dt(row.occurred_at) or _utc_now(),
+        correlation_id=row.correlation_id,
+        env_scope=row.env_scope,
+        account_scope_label=row.account_scope_label,
+        symbol=row.symbol,
+        interval=row.interval,
+        execution_mode=row.execution_mode,
+        pipeline_step=row.pipeline_step,
+        message=row.message,
         payload=payload,
     )

@@ -1,0 +1,195 @@
+{
+  "captured_at_utc": "2026-11-07T19:32:58.002204+00:00",
+  "project_ref": "wmirifmgaftassgrfbyl",
+  "host_redacted": "aws-0-ap-southeast-2.pooler.supabase.com",
+  "region_hint": "ap-southeast-2",
+  "note": "Sanitized inventory \u2014 no passwords, URLs with credentials, or role passwords.",
+  "server_version": "17.11",
+  "current_user": "postgres",
+  "alembic": "20261107_0004",
+  "roles": [
+    {
+      "rolname": "anon",
+      "rolsuper": false,
+      "rolbypassrls": false,
+      "rolcanlogin": false,
+      "rolinherit": true
+    },
+    {
+      "rolname": "authenticated",
+      "rolsuper": false,
+      "rolbypassrls": false,
+      "rolcanlogin": false,
+      "rolinherit": true
+    },
+    {
+      "rolname": "authenticator",
+      "rolsuper": false,
+      "rolbypassrls": false,
+      "rolcanlogin": true,
+      "rolinherit": false
+    },
+    {
+      "rolname": "postgres",
+      "rolsuper": false,
+      "rolbypassrls": true,
+      "rolcanlogin": true,
+      "rolinherit": true
+    }
+  ],
+  "cryptonova_role_count": 0,
+  "tables": [
+    {
+      "schema": "app",
+      "name": "agent_decisions",
+      "owner": "postgres",
+      "rls": true,
+      "force_rls": false
+    },
+    {
+      "schema": "app",
+      "name": "alembic_version",
+      "owner": "postgres",
+      "rls": false,
+      "force_rls": false
+    },
+    {
+      "schema": "app",
+      "name": "exchange_account_bindings",
+      "owner": "postgres",
+      "rls": true,
+      "force_rls": false
+    },
+    {
+      "schema": "app",
+      "name": "scheduler_audit",
+      "owner": "postgres",
+      "rls": true,
+      "force_rls": false
+    },
+    {
+      "schema": "app",
+      "name": "scheduler_evaluation_history",
+      "owner": "postgres",
+      "rls": true,
+      "force_rls": false
+    },
+    {
+      "schema": "app",
+      "name": "signal_agent_contributions",
+      "owner": "postgres",
+      "rls": true,
+      "force_rls": false
+    },
+    {
+      "schema": "app",
+      "name": "signal_history",
+      "owner": "postgres",
+      "rls": true,
+      "force_rls": false
+    },
+    {
+      "schema": "app",
+      "name": "signal_risk_events",
+      "owner": "postgres",
+      "rls": true,
+      "force_rls": false
+    },
+    {
+      "schema": "app",
+      "name": "strategy_configs",
+      "owner": "postgres",
+      "rls": true,
+      "force_rls": false
+    },
+    {
+      "schema": "app",
+      "name": "system_events",
+      "owner": "postgres",
+      "rls": true,
+      "force_rls": false
+    }
+  ],
+  "policies": [
+    {
+      "table": "agent_decisions",
+      "policy": "agent_decisions_select_own",
+      "cmd": "SELECT",
+      "roles": "{authenticated}",
+      "using": "((owner_user_id IS NOT NULL) AND (owner_user_id = auth.uid()))",
+      "with_check": null
+    },
+    {
+      "table": "exchange_account_bindings",
+      "policy": "exchange_account_bindings_select_own",
+      "cmd": "SELECT",
+      "roles": "{authenticated}",
+      "using": "((owner_user_id = auth.uid()) AND ((status)::text = 'active'::text))",
+      "with_check": null
+    },
+    {
+      "table": "scheduler_audit",
+      "policy": "scheduler_audit_select_own",
+      "cmd": "SELECT",
+      "roles": "{authenticated}",
+      "using": "(owner_user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "table": "scheduler_evaluation_history",
+      "policy": "scheduler_evaluation_history_select_own",
+      "cmd": "SELECT",
+      "roles": "{authenticated}",
+      "using": "(owner_user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "table": "signal_agent_contributions",
+      "policy": "signal_agent_contributions_select_own",
+      "cmd": "SELECT",
+      "roles": "{authenticated}",
+      "using": "(owner_user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "table": "signal_history",
+      "policy": "signal_history_select_own",
+      "cmd": "SELECT",
+      "roles": "{authenticated}",
+      "using": "(owner_user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "table": "signal_risk_events",
+      "policy": "signal_risk_events_select_own",
+      "cmd": "SELECT",
+      "roles": "{authenticated}",
+      "using": "(owner_user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "table": "strategy_configs",
+      "policy": "strategy_configs_select_own",
+      "cmd": "SELECT",
+      "roles": "{authenticated}",
+      "using": "((owner_user_id IS NOT NULL) AND (owner_user_id = auth.uid()))",
+      "with_check": null
+    },
+    {
+      "table": "system_events",
+      "policy": "system_events_select_own",
+      "cmd": "SELECT",
+      "roles": "{authenticated}",
+      "using": "((owner_user_id IS NOT NULL) AND (owner_user_id = auth.uid()))",
+      "with_check": null
+    }
+  ],
+  "phase4d_counts": {
+    "signal_history": 0,
+    "signal_agent_contributions": 0,
+    "signal_risk_events": 0,
+    "scheduler_evaluation_history": 0,
+    "scheduler_audit": 0
+  },
+  "auth_uid_exists": true
+}

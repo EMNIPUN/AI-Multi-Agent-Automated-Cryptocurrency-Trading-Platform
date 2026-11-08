@@ -25,19 +25,14 @@ export function MetricCard({
           : "text-foreground";
 
   return (
-    <div
-      className={cn(
-        "rounded-xl border border-border/70 bg-card/70 p-4 shadow-sm",
-        className,
-      )}
-    >
+    <div className={cn("cn-glow-card p-4", className)}>
       <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </p>
       <div className={cn("mt-2 font-mono text-xl tracking-tight md:text-2xl", toneClass)}>
         {value}
       </div>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }

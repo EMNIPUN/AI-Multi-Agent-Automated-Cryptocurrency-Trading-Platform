@@ -1,0 +1,17 @@
+-- Phase 3C Part 1 — exchange account bindings (REVIEW ONLY)
+-- Companion to Alembic 20261105_0003_exchange_account_bindings.py
+-- DO NOT auto-apply. Operator-approved Alembic upgrade only.
+--
+-- Distinct from 20261104_0002 (catalog owner_user_id on agent_decisions etc.).
+-- 0002 does NOT create exchange-account ownership.
+--
+-- credential_ref: opaque server pointer (e.g. env:BYBIT_MAINNET_OPERATOR).
+-- Never store raw Bybit API keys or secrets in this table.
+-- telemetry_scope_id: non-secret UUID stamped on worker events (not account_fp).
+--
+-- Enrollment is operator-attested offline; no public self-serve binding API in Part 1.
+-- Keep schema `app` out of Supabase Data API Exposed schemas.
+-- Do NOT GRANT USAGE ON SCHEMA app TO anon, authenticated.
+
+-- See Alembic revision for executable DDL + RLS SELECT-own policy.
+-- authenticated has SELECT of own ACTIVE rows only — no INSERT/UPDATE/DELETE via Data API.

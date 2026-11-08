@@ -11,6 +11,10 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from apps.api.app.config import ApiSettings, get_api_settings
 from apps.api.app.database_url import DatabaseUrlError
+from apps.api.app.runtime_db import (
+    RuntimeDatabaseConfigError,
+    validate_runtime_engine_or_raise,
+)
 
 _engine: Engine | None = None
 _SessionLocal: sessionmaker[Session] | None = None
@@ -33,10 +37,29 @@ def create_db_engine(settings: ApiSettings | None = None) -> Engine:
     )
 
 
-def configure_engine(settings: ApiSettings | None = None) -> Engine:
+def configure_engine(
+    settings: ApiSettings | None = None,
+    *,
+    validate_runtime_identity: bool = True,
+) -> Engine:
+    """
+    Build the process engine.
+
+    When RUNTIME_DB_IDENTITY_ENABLED is true, optionally probes live session
+    identity and refuses BYPASSRLS/superuser sessions (Gate 63 path).
+    Default mode leaves behavior unchanged and skips the probe.
+    """
     global _engine, _SessionLocal
     settings = settings or get_api_settings()
     _engine = create_db_engine(settings)
+    if settings.runtime_db_identity_enabled and validate_runtime_identity:
+        try:
+            validate_runtime_engine_or_raise(_engine, settings)
+        except RuntimeDatabaseConfigError:
+            _engine.dispose()
+            _engine = None
+            _SessionLocal = None
+            raise
     _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False, future=True)
     return _engine
 

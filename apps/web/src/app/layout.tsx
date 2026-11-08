@@ -1,13 +1,26 @@
 import type { Metadata } from "next";
-import { Fraunces, IBM_Plex_Mono, Source_Sans_3 } from "next/font/google";
+import { IBM_Plex_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { AppShell } from "@/components/layout/AppShell";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
 
-const display = Fraunces({ subsets: ["latin"], variable: "--font-display" });
-const sans = Source_Sans_3({ subsets: ["latin"], variable: "--font-sans" });
+/** Magic UI startup-template style: clean geometric sans (not Inter). */
+const sans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
+});
+
+const display = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["500", "600", "700"],
+});
+
 const mono = IBM_Plex_Mono({
   weight: ["400", "500"],
   subsets: ["latin"],
@@ -17,7 +30,7 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "CryptoNova — Intelligent Trading. Disciplined Execution.",
   description:
-    "Premium trading monitoring and paper workspace for CryptoNova multi-agent platform",
+    "Multi-agent cryptocurrency trading platform. Paper-first, SAMPLE-safe, with public markets and gated private reads.",
   icons: {
     icon: "/brand/cryptonova-mark.png",
     apple: "/brand/cryptonova-mark.png",
@@ -27,9 +40,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`dark ${display.variable} ${sans.variable} ${mono.variable}`}>
-      <body className="font-sans">
+      <body className="font-sans antialiased">
         <TooltipProvider>
-          <AppShell>{children}</AppShell>
+          <AuthProvider>
+            <AppShell>{children}</AppShell>
+            <Toaster richColors closeButton position="top-right" />
+          </AuthProvider>
         </TooltipProvider>
       </body>
     </html>

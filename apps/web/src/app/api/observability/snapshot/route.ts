@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { localAgentFixture } from "@/lib/fixtures/agentSnapshot";
+import {
+  apiInternalBase,
+  bearerFromRequest,
+  proxyJsonToFastApi,
+} from "@/lib/security/authenticated-proxy";
+import { operatorLocalBrowserProxyEnabled } from "@/lib/security/operator-proxy-gate";
 
 function unavailable(note: string) {
   return {
@@ -39,45 +45,45 @@ function unavailable(note: string) {
 /**
  * Same-origin proxy.
  * source=sample → labeled fixtures.
- * source=worker (default) → loopback worker ledger only, never fixtures.
- * JWTs are not placed in query strings.
+ * source=worker → JWT-forwarded owner-bound snapshot, or optional operator break-glass.
  */
 export async function GET(request: Request) {
   const source = new URL(request.url).searchParams.get("source") ?? "worker";
-  const base = process.env.API_INTERNAL_BASE_URL?.replace(/\/$/, "");
 
   if (source !== "sample") {
-    if (!base) {
-      return NextResponse.json(unavailable("API base URL is not configured."));
+    const token = bearerFromRequest(request);
+    const breakGlass = operatorLocalBrowserProxyEnabled();
+    if (!token && !breakGlass) {
+      return NextResponse.json(
+        unavailable(
+          "Worker telemetry requires Authorization Bearer token (owner-bound) or explicit operator-local break-glass.",
+        ),
+        { headers: { "Cache-Control": "no-store" } },
+      );
     }
-    try {
-      const res = await fetch(`${base}/api/v1/observability/worker-snapshot`, {
-        headers: { Accept: "application/json" },
-        cache: "no-store",
+    if (token) {
+      return proxyJsonToFastApi(request, "/api/v1/observability/worker-snapshot", {
+        allowOperatorBreakGlass: false,
       });
-      if (!res.ok) {
-        return NextResponse.json(
-          unavailable("Worker telemetry is not authorized or not reachable."),
-        );
-      }
-      return NextResponse.json(await res.json());
-    } catch {
-      return NextResponse.json(unavailable("Worker telemetry request failed."));
     }
+    return proxyJsonToFastApi(request, "/api/v1/observability/worker-snapshot", {
+      allowOperatorBreakGlass: true,
+    });
   }
 
-  if (base) {
-    try {
-      const res = await fetch(`${base}/api/v1/observability/snapshot`, {
-        headers: { Accept: "application/json" },
-        cache: "no-store",
+  const base = apiInternalBase();
+  try {
+    const res = await fetch(`${base}/api/v1/observability/snapshot`, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (res.ok) {
+      return NextResponse.json(await res.json(), {
+        headers: { "Cache-Control": "no-store" },
       });
-      if (res.ok) {
-        return NextResponse.json(await res.json());
-      }
-    } catch {
-      // fall through to local fixture
     }
+  } catch {
+    // fall through
   }
   const fixture = localAgentFixture();
   return NextResponse.json({

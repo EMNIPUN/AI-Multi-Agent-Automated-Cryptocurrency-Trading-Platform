@@ -135,3 +135,67 @@ class StrategyConfig(Base):
     version: Mapped[str] = mapped_column(String(32), nullable=False, default="1")
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     config_json: Mapped[dict | None] = mapped_column(_JsonType, nullable=True)
+
+
+class ExchangeAccountBindingRow(Base):
+    """
+    Verified user ↔ exchange account ownership (Phase 3C).
+
+    credential_ref is an opaque server-side pointer (never raw API keys).
+    telemetry_scope_id is the non-secret id stamped on worker events.
+    Migration 0002 catalog owner columns are NOT exchange-account bindings.
+    """
+
+    __tablename__ = "exchange_account_bindings"
+    __table_args__ = (
+        Index(
+            "ix_exchange_bindings_owner_provider_env",
+            "owner_user_id",
+            "provider",
+            "environment",
+        ),
+        Index("ix_exchange_bindings_telemetry_scope", "telemetry_scope_id", unique=True),
+        Index(
+            "ix_exchange_bindings_active_cred",
+            "provider",
+            "credential_ref",
+            unique=True,
+            postgresql_where=text("status = 'active'"),
+        ),
+        Index(
+            "ix_exchange_bindings_owner_active_env",
+            "owner_user_id",
+            "provider",
+            "environment",
+            unique=True,
+            postgresql_where=text("status = 'active'"),
+        ),
+        {"schema": "app"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+    owner_user_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), nullable=True
+    )
+    provider: Mapped[str] = mapped_column(String(32), nullable=False, default="bybit")
+    environment: Mapped[str] = mapped_column(String(16), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    display_label: Mapped[str] = mapped_column(String(128), nullable=False)
+    credential_ref: Mapped[str] = mapped_column(String(128), nullable=False)
+    telemetry_scope_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    enrollment_attestation: Mapped[str] = mapped_column(Text, nullable=False)
+    enrolled_by_operator: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
