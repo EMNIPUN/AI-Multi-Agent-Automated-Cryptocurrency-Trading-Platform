@@ -133,6 +133,14 @@ class ApiSettings(BaseSettings):
     database_migrator_url: str | None = Field(
         default=None, validation_alias="DATABASE_MIGRATOR_URL"
     )
+    # Autonomous PAPER supervisor (chat start/pause/resume/stop/halt). Live stays locked.
+    paper_supervisor_enabled: bool = Field(
+        default=False, validation_alias="CRYPTONOVA_PAPER_SUPERVISOR"
+    )
+    paper_supervisor_journal: str = Field(
+        default="data/paper_supervisor/supervisor.sqlite3",
+        validation_alias="CRYPTONOVA_PAPER_SUPERVISOR_JOURNAL",
+    )
     # Prompt 65B — local paper journal read API (DISABLED by default).
     # When false: status reports disabled; session/account routes return 503.
     # Never mutates paper DB; never auto-attaches broker.

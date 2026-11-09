@@ -70,19 +70,19 @@ export default function MarketsPage() {
   return (
     <div className="space-y-4 pb-6">
       <BlurFade>
-        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:p-6">
-          <BorderBeam size={240} duration={14} colorFrom="#f59e0b" colorTo="#ffffff" />
+        <section className="relative overflow-hidden rounded-3xl border border-border bg-muted/40 p-5 md:p-6">
+          <BorderBeam size={240} duration={14} colorFrom="#F7A600" colorTo="#FFCE6E" />
           <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-amber-200/80">
-                Public markets
+              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-brand">
+                Trading Desk
               </p>
               <h1 className="text-metallic mt-1 text-3xl font-medium tracking-tight md:text-4xl">
                 Markets
               </h1>
-              <p className="mt-2 max-w-xl text-sm text-white/55">
+              <p className="mt-2 max-w-xl text-sm text-foreground">
                 Live Bybit prices, candles, order book, and trades — read-only. No wallet or order
-                entry here.
+                entry here. Live trading stays locked.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -96,13 +96,13 @@ export default function MarketsPage() {
               />
               <Badge
                 variant={stream.live ? "outline" : "warning"}
-                className="rounded-full border-white/15"
+                className="rounded-full border-border"
               >
                 <Radio className="mr-1 h-3 w-3" />
                 {modeLabel}
               </Badge>
               {stream.updatedAt ? (
-                <span className="text-[11px] text-white/40">{stream.updatedAt}</span>
+                <span className="text-[11px] text-foreground">{stream.updatedAt}</span>
               ) : null}
             </div>
           </div>
@@ -123,7 +123,7 @@ export default function MarketsPage() {
                 <TabsTrigger value="spot">Spot</TabsTrigger>
               </TabsList>
             </Tabs>
-            <Separator orientation="vertical" className="hidden h-8 bg-white/15 sm:block" />
+            <Separator orientation="vertical" className="hidden h-8 bg-muted/40 sm:block" />
             <Tabs
               value={symbol}
               onValueChange={(value) => startTransition(() => setSymbol(value))}
@@ -136,7 +136,7 @@ export default function MarketsPage() {
                 ))}
               </TabsList>
             </Tabs>
-            <Separator orientation="vertical" className="hidden h-8 bg-white/15 lg:block" />
+            <Separator orientation="vertical" className="hidden h-8 bg-muted/40 lg:block" />
             <Tabs
               value={interval}
               onValueChange={(value) => startTransition(() => setTf(value))}
@@ -158,7 +158,7 @@ export default function MarketsPage() {
                 Filters
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-3xl border-white/10 bg-card/95">
+            <SheetContent side="bottom" className="rounded-t-3xl border-border bg-card/95">
               <SheetHeader>
                 <SheetTitle>Market filters</SheetTitle>
                 <SheetDescription>Category, symbol, and timeframe</SheetDescription>
@@ -203,7 +203,7 @@ export default function MarketsPage() {
             </SheetContent>
           </Sheet>
 
-          <div className="hidden text-xs text-white/45 md:block">
+          <div className="hidden text-xs text-foreground md:block">
             {category === "linear" ? "Perp" : "Spot"} · {symbol.replace("USDT", "")} ·{" "}
             {INTERVAL_OPTIONS.find((o) => o.value === interval)?.label ?? interval}
           </div>
@@ -212,15 +212,15 @@ export default function MarketsPage() {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_19rem]">
         <BlurFade delay={0.06} className="min-w-0 space-y-4">
-          <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
-            <BorderBeam size={200} duration={12} colorFrom="#f59e0b" colorTo="#ffffff" />
+          <section className="relative overflow-hidden rounded-3xl border border-border bg-muted/40 p-4 md:p-5">
+            <BorderBeam size={200} duration={12} colorFrom="#F7A600" colorTo="#FFCE6E" />
             <div className="relative z-10 mb-4 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-xs text-white/45">
+                <p className="text-xs text-foreground">
                   {category === "linear" ? "USDT perpetual" : "Spot"} · {symbol}
                 </p>
                 <div className="mt-1 flex flex-wrap items-baseline gap-3">
-                  <span className="font-mono text-3xl tracking-tight text-white md:text-4xl">
+                  <span className="font-mono text-3xl tracking-tight text-foreground md:text-4xl">
                     {selectedTicker ? (
                       <NumberTicker
                         value={selectedTicker.last_price}
@@ -234,7 +234,7 @@ export default function MarketsPage() {
                     className={cn(
                       "rounded-full px-2 py-0.5 font-mono text-sm",
                       pct == null
-                        ? "text-white/40"
+                        ? "text-foreground"
                         : pctUp
                           ? "bg-emerald-500/10 text-emerald-400"
                           : "bg-rose-500/10 text-rose-400",
@@ -243,13 +243,13 @@ export default function MarketsPage() {
                     {pct == null ? "—" : `${pctUp ? "+" : ""}${pct.toFixed(2)}%`}
                   </span>
                 </div>
-                <p className="mt-1 text-sm font-medium text-white/70">{base}/USDT</p>
+                <p className="mt-1 text-sm font-medium text-foreground">{base}/USDT</p>
               </div>
 
               <div className="flex flex-wrap items-center gap-4">
-                <div className="text-right text-xs text-white/45">
+                <div className="text-right text-xs text-foreground">
                   <p>24h volume</p>
-                  <p className="mt-0.5 font-mono text-sm text-white">
+                  <p className="mt-0.5 font-mono text-sm text-foreground">
                     {selectedTicker?.volume_24h != null
                       ? selectedTicker.volume_24h.toLocaleString(undefined, {
                           maximumFractionDigits: 0,
@@ -300,10 +300,10 @@ export default function MarketsPage() {
                   onClick={() => startTransition(() => setSymbol(sym))}
                   className={cn(
                     "cn-glow-card p-3.5 text-left",
-                    symbol === sym && "border-white/30 bg-white/10",
+                    symbol === sym && "border-border bg-muted/40",
                   )}
                 >
-                  <div className="flex items-center justify-between text-[11px] text-white/45">
+                  <div className="flex items-center justify-between text-[11px] text-foreground">
                     <span>{sym.replace("USDT", "")}/USDT</span>
                     <span
                       className={
@@ -313,7 +313,7 @@ export default function MarketsPage() {
                       {change == null ? "—" : `${up ? "+" : ""}${change.toFixed(2)}%`}
                     </span>
                   </div>
-                  <div className="mt-1.5 font-mono text-lg text-white">
+                  <div className="mt-1.5 font-mono text-lg text-foreground">
                     {t
                       ? t.last_price.toLocaleString(undefined, { maximumFractionDigits: 4 })
                       : "—"}
@@ -325,15 +325,15 @@ export default function MarketsPage() {
         </BlurFade>
 
         <BlurFade delay={0.08} className="space-y-4">
-          <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-            <h2 className="mb-3 text-sm font-medium text-white">Order book</h2>
+          <section className="rounded-3xl border border-border bg-muted/40 p-4">
+            <h2 className="mb-3 text-sm font-medium text-foreground">Order book</h2>
             <OrderBookPanel book={stream.book} />
           </section>
 
-          <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+          <section className="rounded-3xl border border-border bg-muted/40 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-medium text-white">Recent trades</h2>
-              <Badge variant="outline" className="rounded-full border-white/15 text-[10px]">
+              <h2 className="text-sm font-medium text-foreground">Recent trades</h2>
+              <Badge variant="outline" className="rounded-full border-border text-[10px]">
                 Live
               </Badge>
             </div>

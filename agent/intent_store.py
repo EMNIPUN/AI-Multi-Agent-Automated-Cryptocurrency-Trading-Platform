@@ -293,9 +293,11 @@ class IntentStore:
                 account_fp = row.account_fp
                 inserted = 0
                 now = utc_now_iso()
+                seen_exec: set[str] = set()
                 for ex in executions:
-                    if not ex.exec_id:
+                    if not ex.exec_id or ex.exec_id in seen_exec:
                         continue
+                    seen_exec.add(ex.exec_id)
                     exists = session.scalar(
                         select(OrderExecutionRow).where(
                             OrderExecutionRow.owner_user_id == self._owner,

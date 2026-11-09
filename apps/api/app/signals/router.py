@@ -88,13 +88,20 @@ def engine_start(
 ) -> dict[str, Any]:
     """Operator-local start of automatic SIGNAL evaluation — never trading."""
     _operator_local_ok(request, settings)
-    if agent_allow_live_default():
-        # Defense in depth: refuse auto engine if live trading flag somehow enabled.
-        raise HTTPException(status_code=403, detail="refuse_when_agent_allow_live")
     try:
-        return start_auto_engine(rest_client=client)
+        body = start_auto_engine(rest_client=client)
     except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    # Signal engine never places orders. LIVE may still be armed for Orchestrator Approve.
+    if agent_allow_live_default():
+        body["live_armed_note"] = (
+            "AGENT_ALLOW_LIVE is on for Orchestrator chat Approve. "
+            "This signal engine still evaluates signals only — it does not place orders."
+        )
+    body["execution_allowed"] = False
+    body["trading_enabled"] = False
+    body["not_automatic_trading"] = True
+    return body
 
 
 @router.post("/engine/stop")

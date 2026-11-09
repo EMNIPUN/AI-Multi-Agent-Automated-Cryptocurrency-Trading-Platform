@@ -132,6 +132,20 @@ class AutomationExecStore:
             finally:
                 session.close()
 
+    def get(self, intent_id: str) -> ExecutionIntentRow | None:
+        with self._lock:
+            session = self._Session()
+            try:
+                r = session.scalar(
+                    select(AutomationExecIntentRow).where(
+                        AutomationExecIntentRow.owner_user_id == self._owner,
+                        AutomationExecIntentRow.intent_id == intent_id,
+                    )
+                )
+                return self._row(r) if r else None
+            finally:
+                session.close()
+
     def append_event(
         self, *, intent_id: str, event_type: str, detail: dict[str, Any], now_ms: int
     ) -> None:

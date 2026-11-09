@@ -1,337 +1,335 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   Activity,
+  ArrowRight,
+  Bot,
   CandlestickChart,
   FlaskConical,
   ShieldCheck,
   Sparkles,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
 
-import { NewsAlertStrip } from "@/components/news/NewsAlertStrip";
-import { WalletBalancePanel } from "@/components/WalletBalancePanel";
-import { DashboardMarkets } from "@/components/dashboard/DashboardMarkets";
-import { AnimatedList } from "@/components/magicui/animated-list";
-import { AvatarCircles } from "@/components/magicui/avatar-circles";
-import { BentoCard, BentoGrid } from "@/components/magicui/bento-grid";
+import {
+  AgentStatusList,
+  MetricGrid,
+  MetricTile,
+  ModeBadge,
+  PageFrame,
+  SectionPanel,
+} from "@/components/command-center";
 import { BlurFade } from "@/components/magicui/blur-fade";
-import { BorderBeam } from "@/components/magicui/border-beam";
-import { InteractiveHoverButton } from "@/components/magicui/interactive-hover-button";
 import { NumberTicker } from "@/components/magicui/number-ticker";
 import { Ripple } from "@/components/magicui/ripple";
+import { NewsAlertStrip } from "@/components/news/NewsAlertStrip";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { dashboardFixture } from "@/lib/fixtures/dashboard";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { agentsForStatusList } from "@/lib/agents/registry";
 import { cn } from "@/lib/utils";
 
-const TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "practice", label: "Practice" },
-  { id: "markets", label: "Markets" },
-  { id: "agents", label: "Agents" },
-  { id: "wallet", label: "Wallet" },
-  { id: "activity", label: "Activity" },
-] as const;
+type AnyRow = Record<string, unknown>;
 
-type TabId = (typeof TABS)[number]["id"];
+async function readJson(path: string) {
+  try {
+    const res = await fetch(path, { cache: "no-store" });
+    const body = (await res.json().catch(() => ({}))) as AnyRow;
+    return { ok: res.ok, body };
+  } catch {
+    return { ok: false, body: {} as AnyRow };
+  }
+}
 
-const AVATARS = [
-  { imageUrl: "https://api.dicebear.com/9.x/shapes/svg?seed=nova1" },
-  { imageUrl: "https://api.dicebear.com/9.x/shapes/svg?seed=nova2" },
-  { imageUrl: "https://api.dicebear.com/9.x/shapes/svg?seed=nova3" },
-  { imageUrl: "https://api.dicebear.com/9.x/shapes/svg?seed=nova4" },
+const QUICK_LINKS = [
+  {
+    href: "/autonomy",
+    title: "Autonomous Trading",
+    detail: "Session controls, decisions & exits",
+    icon: ShieldCheck,
+  },
+  {
+    href: "/orchestrator",
+    title: "Orchestrator",
+    detail: "Primary AI supervision chat",
+    icon: Bot,
+  },
+  {
+    href: "/agents/live",
+    title: "Live AI Analysis",
+    detail: "Multi-agent studio & signals",
+    icon: Activity,
+  },
+  {
+    href: "/markets",
+    title: "Markets",
+    detail: "Public charts & tickers",
+    icon: CandlestickChart,
+  },
+  {
+    href: "/paper",
+    title: "Paper Trading",
+    detail: "Simulated journal only",
+    icon: FlaskConical,
+  },
+  {
+    href: "/portfolio",
+    title: "Portfolio",
+    detail: "Read-only wallet snapshot",
+    icon: Wallet,
+  },
+  {
+    href: "/risk",
+    title: "Risk Management",
+    detail: "Guards stay paper-scoped",
+    icon: ShieldCheck,
+  },
 ];
 
-const BENTO = [
-  {
-    name: "Markets",
-    description: "Live public charts and tickers — no private keys required.",
-    href: "/markets",
-    cta: "Open charts",
-    Icon: CandlestickChart,
-    className: "lg:col-span-2",
-    background: (
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(245,158,11,0.12),transparent_55%)]" />
-    ),
-  },
-  {
-    name: "Paper trade",
-    description: "Practice safely with virtual money before going live.",
-    href: "/paper",
-    cta: "Start practice",
-    Icon: FlaskConical,
-    className: "lg:col-span-1",
-    background: (
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.08),transparent_55%)]" />
-    ),
-  },
-  {
-    name: "AI agents",
-    description: "Watch research, risk, and execution agents work together.",
-    href: "/agents/live",
-    cta: "Open studio",
-    Icon: Activity,
-    className: "lg:col-span-1",
-    background: (
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(52,211,153,0.1),transparent_55%)]" />
-    ),
-  },
-  {
-    name: "Risk guard",
-    description: "Stay protected with loss limits and trading locks.",
-    href: "/risk",
-    cta: "Review risk",
-    Icon: ShieldCheck,
-    className: "lg:col-span-2",
-    background: (
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06),transparent_60%)]" />
-    ),
-  },
-] as const;
-
 export function DashboardHome() {
-  const f = dashboardFixture;
-  const agentOk = f.agent.status !== "OFFLINE" && !f.agent.heartbeat_stale;
-  const [tab, setTab] = useState<TabId>("overview");
+  const [loading, setLoading] = useState(true);
+  const [orch, setOrch] = useState<AnyRow | null>(null);
+  const [report, setReport] = useState<AnyRow | null>(null);
+  const [paper, setPaper] = useState<AnyRow | null>(null);
+  const [wallet, setWallet] = useState<AnyRow | null>(null);
+  const [autonomy, setAutonomy] = useState<AnyRow | null>(null);
+  const [runtime, setRuntime] = useState<AnyRow | null>(null);
+  const [risk, setRisk] = useState<AnyRow | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [st, rp, pap, wal, auto, agentsRt, riskFeed] = await Promise.all([
+        readJson("/api/orchestrator/status"),
+        readJson("/api/orchestrator/report"),
+        readJson("/api/paper/status"),
+        readJson("/api/exchange/wallet"),
+        readJson("/api/orchestrator/autonomy"),
+        readJson("/api/orchestrator/agents/runtime"),
+        readJson("/api/orchestrator/risk"),
+      ]);
+      if (cancelled) return;
+      setOrch(st.ok ? st.body : null);
+      setReport(rp.ok ? rp.body : null);
+      setPaper(pap.ok ? pap.body : null);
+      setWallet(wal.ok ? wal.body : null);
+      setAutonomy(auto.ok ? auto.body : null);
+      setRuntime(agentsRt.ok ? agentsRt.body : null);
+      setRisk(riskFeed.ok ? riskFeed.body : null);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const session = (autonomy?.session as AnyRow | undefined) || null;
+  const supervisor = String(session?.state || orch?.state || "STOPPED").toUpperCase();
+  const journal = (autonomy?.journal as AnyRow | undefined) || null;
+  const openPositions =
+    Number(report?.open_positions ?? (autonomy?.open_position ? 1 : 0) ?? orch?.open_positions ?? 0) || 0;
+  const equityRaw = journal?.equity ?? report?.equity;
+  const equityNum =
+    equityRaw == null || equityRaw === "" || equityRaw === "—"
+      ? null
+      : Number(equityRaw);
+  const paperEnabled = Boolean(paper?.paper_read_api_enabled);
+  const walletEquity = wallet?.total_equity != null ? Number(wallet.total_equity) : null;
+  const strategyVersion = String(autonomy?.strategy_version || runtime?.strategy_version || "—");
+  const halted = Boolean(risk?.halted);
+  const agents = agentsForStatusList(
+    Array.isArray(runtime?.agents)
+      ? (runtime?.agents as { agent_id: string; label: string; status: string }[])
+      : null,
+  );
 
   return (
-    <div className="space-y-5 pb-8">
+    <PageFrame
+      title="Overview"
+      description="Fleet overview for the advanced multi-agent control plane. Primary ops live on Autonomous Trading; LIVE stays locked."
+      modes={["readonly", "paper", "live"]}
+      actions={
+        <Button asChild className="rounded-full" variant="secondary">
+          <Link href="/autonomy">
+            Open Autonomous Trading
+            <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+          </Link>
+        </Button>
+      }
+    >
       <NewsAlertStrip />
+
       <BlurFade>
-        <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-          <BorderBeam size={280} duration={14} colorFrom="#f59e0b" colorTo="#ffffff" />
-          <Ripple className="opacity-25" mainCircleSize={80} numCircles={4} />
-          <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-xl">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="badge-intro text-xs">
-                  <Sparkles className="h-3 w-3" />
-                  Demo mode
-                </span>
-                <Badge variant="outline" className="rounded-full border-white/15 text-white/70">
-                  Live trading off
-                </Badge>
-              </div>
-              <h1 className="text-metallic text-3xl font-medium tracking-tight md:text-4xl">
-                Welcome back
-              </h1>
-              <p className="mt-2 text-sm leading-relaxed text-white/55 md:text-base">
-                Use the tabs below to switch views in place — no scrolling around the page.
+        <section className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-zinc-950 via-black to-black px-5 py-7 md:px-8">
+          <Ripple className="opacity-20" mainCircleSize={80} numCircles={4} />
+          <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-brand">
+                AI Trading Command Center
               </p>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <AvatarCircles avatarUrls={AVATARS} numPeople={12} />
-                <p className="text-xs text-white/45">Operators exploring paper mode</p>
-              </div>
+              <h2 className="mt-2 text-2xl font-medium tracking-tight text-foreground md:text-3xl">
+                Calibrated agents. Autonomous paper. Testnet gated.
+              </h2>
+              <p className="mt-2 text-sm text-foreground">
+                Strategy {strategyVersion}. Scores are historical agreement, not guaranteed edge.
+                LLM/news stay advisory. Nothing here places a live exchange order.
+              </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <InteractiveHoverButton href="/paper">Start paper trade</InteractiveHoverButton>
-              <InteractiveHoverButton href="/markets" className="border-white/20 bg-transparent">
-                View markets
-              </InteractiveHoverButton>
+            <div className="flex flex-wrap gap-2">
+              <ModeBadge mode="paper" />
+              <ModeBadge mode="live" />
+              <Badge variant="outline" className="rounded-full">
+                Supervisor {supervisor}
+              </Badge>
+              {halted ? (
+                <Badge variant="destructive" className="rounded-full">
+                  Risk halt
+                </Badge>
+              ) : null}
             </div>
           </div>
         </section>
       </BlurFade>
 
-      <Separator className="bg-white/10" />
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Spinner className="size-4" />
+          Loading command metrics…
+        </div>
+      ) : (
+        <MetricGrid>
+          <MetricTile label="Supervisor" hint="Orchestrator feature gate" accent>
+            <span className="font-mono text-base">
+              {supervisor}
+              <span className="text-foreground"> · </span>
+              {orch?.enabled ? "on" : "off"}
+            </span>
+          </MetricTile>
+          <MetricTile label="Execution mode" hint="TESTNET gated · LIVE locked">
+            <span className="font-mono text-base">PAPER · TESTNET gated · LIVE locked</span>
+          </MetricTile>
+          <MetricTile label="Strategy" hint="Calibrated historical agreement only">
+            <span className="font-mono text-base">{strategyVersion}</span>
+          </MetricTile>
+          <MetricTile label="Paper equity" hint="Journal report only">
+            {equityNum != null && Number.isFinite(equityNum) ? (
+              <span className="font-mono">
+                <NumberTicker value={equityNum} decimalPlaces={2} />{" "}
+                <span className="text-sm text-foreground">
+                  {String(report?.currency || "USDT")}
+                </span>
+              </span>
+            ) : (
+              <span className="font-mono text-foreground">—</span>
+            )}
+          </MetricTile>
+          <MetricTile label="Open positions" hint="Paper exposure">
+            <span className="font-mono">
+              <NumberTicker value={openPositions} />
+            </span>
+          </MetricTile>
+        </MetricGrid>
+      )}
 
-      <Tabs
-        value={tab}
-        onValueChange={(value) => setTab(value as TabId)}
-        className="min-h-[28rem]"
-      >
-        <TabsList aria-label="Dashboard categories">
-          {TABS.map((item) => (
-            <TabsTrigger key={item.id} value={item.id}>
-              {item.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <TabsContent value="overview" className="mt-4">
-          <BlurFade>
-            <BentoGrid className="auto-rows-[16rem]">
-              {BENTO.map((card) => (
-                <BentoCard
-                  key={`${card.name}-${card.href}`}
-                  name={card.name}
-                  className={card.className}
-                  background={card.background}
-                  Icon={card.Icon}
-                  description={card.description}
-                  href={card.href}
-                  cta={card.cta}
-                />
-              ))}
-            </BentoGrid>
-          </BlurFade>
-        </TabsContent>
-
-        <TabsContent value="practice" className="mt-4">
-          <BlurFade>
-            <section className="relative overflow-hidden rounded-3xl border border-white/15 bg-card/70 p-6 md:p-8">
-              <BorderBeam size={200} duration={10} colorFrom="#f59e0b" colorTo="#ffffff" />
-              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-amber-200/80">
-                Practice account
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+        <SectionPanel
+          title="Desk readiness"
+          description="Honest status from available read adapters — never invented balances."
+          beam
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-border bg-muted/50 p-4">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                Paper journal
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Virtual money for learning — not your Bybit wallet
+              <p className="mt-2 font-mono text-sm text-foreground">
+                {paperEnabled ? "Read API enabled" : "Read API off / unavailable"}
               </p>
-              <p className="mt-5 text-4xl font-medium tracking-tight text-white md:text-5xl">
-                $<NumberTicker value={f.paper.equity} decimalPlaces={2} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Sessions: {String(paper?.session_count ?? "—")}
               </p>
-              <div className="mt-6 grid max-w-2xl grid-cols-3 gap-3">
-                {[
-                  { label: "Cash", value: f.paper.cash, tone: "text-foreground" },
-                  { label: "Open P&L", value: f.paper.unrealized, tone: "text-profit" },
-                  { label: "Closed P&L", value: f.paper.realized, tone: "text-loss" },
-                ].map((m) => (
-                  <div
-                    key={m.label}
-                    className="rounded-2xl border border-border/60 bg-background/50 p-3"
-                  >
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {m.label}
-                    </p>
-                    <p className={cn("mt-1 font-mono text-sm md:text-base", m.tone)}>
-                      {m.value >= 0 ? "" : "−"}
-                      ${Math.abs(m.value).toFixed(2)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6">
-                <InteractiveHoverButton href="/paper">Open paper desk</InteractiveHoverButton>
-              </div>
-            </section>
-          </BlurFade>
-        </TabsContent>
-
-        <TabsContent value="markets" className="mt-4">
-          <BlurFade>
-            <DashboardMarkets />
-          </BlurFade>
-        </TabsContent>
-
-        <TabsContent value="agents" className="mt-4">
-          <BlurFade>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="cn-glow-card p-5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-white/80" />
-                    <h2 className="text-lg font-medium tracking-tight">AI agent</h2>
-                  </div>
-                  <Badge variant={agentOk ? "success" : "warning"} className="rounded-full">
-                    {agentOk ? "Online" : "Resting"}
-                  </Badge>
-                </div>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  {agentOk
-                    ? `Watching ${f.agent.symbol} on ${f.agent.interval}m · ${f.agent.strategy}`
-                    : "Agents are paused right now. You can still browse markets and paper trade."}
-                </p>
-                <div className="mt-4">
-                  <InteractiveHoverButton href="/agents/live">
-                    Open agent studio
-                  </InteractiveHoverButton>
-                </div>
-              </div>
-              <div className="cn-glow-card p-5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-emerald-300" />
-                    <h2 className="text-lg font-medium tracking-tight">Risk guard</h2>
-                  </div>
-                  <Badge variant="success" className="rounded-full">
-                    Protected
-                  </Badge>
-                </div>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  Daily loss guard set to {f.risk.daily_loss_limit}. Live orders stay blocked until
-                  you unlock trading.
-                </p>
-                <div className="mt-4">
-                  <InteractiveHoverButton href="/risk">Review risk</InteractiveHoverButton>
-                </div>
+            </div>
+            <div className="rounded-xl border border-border bg-muted/50 p-4">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                Exchange wallet
+              </p>
+              <p className="mt-2 font-mono text-sm text-foreground">
+                {walletEquity != null && Number.isFinite(walletEquity)
+                  ? `${walletEquity.toLocaleString(undefined, { maximumFractionDigits: 2 })} equity`
+                  : "Not connected / gated"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Read-only UNIFIED when enabled</p>
+            </div>
+            <div className="rounded-xl border border-border bg-muted/50 p-4 sm:col-span-2">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                Risk posture
+              </p>
+              <p className="mt-2 text-sm text-foreground">
+                {halted
+                  ? `Paper risk halt: ${String(risk?.halt_reason || "blocked")}`
+                  : "Live trading disabled. Paper risk facts come from the supervisor journal."}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button asChild variant="outline" size="sm" className="rounded-full">
+                  <Link href="/risk">Open Risk Center</Link>
+                </Button>
+                <Button asChild variant="secondary" size="sm" className="rounded-full">
+                  <Link href="/autonomy">Ops desk</Link>
+                </Button>
               </div>
             </div>
-          </BlurFade>
-        </TabsContent>
+          </div>
+        </SectionPanel>
 
-        <TabsContent value="wallet" className="mt-4">
-          <BlurFade>
-            <WalletBalancePanel compact />
-          </BlurFade>
-        </TabsContent>
+        <SectionPanel
+          title="Agent fleet"
+          description="Per-agent status from latest decision contributions — not a cloned supervisor heartbeat."
+        >
+          <AgentStatusList agents={agents} />
+        </SectionPanel>
+      </div>
 
-        <TabsContent value="activity" className="mt-4">
-          <BlurFade>
-            <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card/60 p-5 md:p-6">
-              <BorderBeam size={180} duration={12} colorFrom="#f59e0b" colorTo="#ffffff" />
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-medium tracking-tight">Recent activity</h2>
-                  <p className="text-sm text-muted-foreground">What happened in your workspace</p>
-                </div>
-                <Badge variant="outline" className="rounded-full">
-                  Demo feed
-                </Badge>
-              </div>
-              <AnimatedList>
-                {f.activity.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-start gap-3 rounded-2xl border border-border/60 bg-background/40 px-4 py-3 transition-colors hover:border-white/15 hover:bg-white/5"
-                  >
-                    <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/80">
-                      <Wallet className="h-3.5 w-3.5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-medium">{friendlyActivityTitle(a.title)}</p>
-                        <span className="text-[11px] text-muted-foreground">Demo</span>
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {friendlyActivityDetail(a.detail)}
-                      </p>
-                    </div>
+      <SectionPanel
+        title="Jump to workspace"
+        description="Agent-first tools first, then trading desk and research."
+      >
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {QUICK_LINKS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "group rounded-2xl border border-border bg-muted/30 p-4 transition-colors hover:border-border hover:bg-muted/40",
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-muted/70">
+                    <Icon className="h-4 w-4 text-brand" />
                   </div>
-                ))}
-              </AnimatedList>
-              <div className="mt-5">
-                <Link href="/notifications" className="text-sm text-white/60 hover:text-white">
-                  View all updates →
-                </Link>
-              </div>
-            </section>
-          </BlurFade>
-        </TabsContent>
-      </Tabs>
-    </div>
+                  <ArrowRight className="h-4 w-4 text-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+                </div>
+                <p className="mt-3 text-sm font-medium text-foreground">{item.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>
+              </Link>
+            );
+          })}
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button asChild variant="ghost" size="sm" className="rounded-full">
+            <Link href="/llm">
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              LLM Intelligence
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm" className="rounded-full">
+            <Link href="/system">System Health</Link>
+          </Button>
+        </div>
+      </SectionPanel>
+    </PageFrame>
   );
-}
-
-function friendlyActivityTitle(title: string) {
-  if (title.toLowerCase().includes("offline")) return "Agents are resting";
-  if (title.toLowerCase().includes("fixture")) return "Demo snapshot loaded";
-  if (title.toLowerCase().includes("trading")) return "Live trading stays off";
-  return title;
-}
-
-function friendlyActivityDetail(detail: string) {
-  if (detail.toLowerCase().includes("heartbeat")) {
-    return "No agent heartbeat yet — browse markets or try paper trading.";
-  }
-  if (detail.toLowerCase().includes("sample")) {
-    return "You’re viewing labeled demo numbers so nothing looks like live money.";
-  }
-  if (detail.toLowerCase().includes("disabled")) {
-    return "Order buttons stay locked for safety until you unlock them.";
-  }
-  return detail;
 }

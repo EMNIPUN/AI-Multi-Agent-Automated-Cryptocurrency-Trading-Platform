@@ -272,7 +272,7 @@ export function AgentStudio() {
 
         <TabsContent value="chart" className="mt-4">
           <BlurFade className="grid gap-4 xl:grid-cols-2">
-            <Card className="overflow-hidden border-white/10 bg-white/[0.03]">
+            <Card className="overflow-hidden border-border bg-muted/40">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   Market chart
@@ -296,7 +296,7 @@ export function AgentStudio() {
               </CardContent>
             </Card>
 
-            <Card className="border-white/10 bg-white/[0.03]">
+            <Card className="border-border bg-muted/40">
               <CardHeader>
                 <CardTitle className="text-base">Order lifecycle</CardTitle>
                 <CardDescription>
@@ -370,8 +370,8 @@ export function AgentStudio() {
       </Tabs>
 
       <StudioReveal delay={0.08}>
-        <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-white/50">
-          <h2 className="mb-2 text-base font-medium text-white">Quick tips</h2>
+        <section className="mt-6 rounded-2xl border border-border bg-muted/30 p-4 text-sm text-foreground">
+          <h2 className="mb-2 text-base font-medium text-foreground">Quick tips</h2>
           <ul className="list-disc space-y-1 pl-5">
             <li>Live means a real worker heartbeat — not that a trade is open.</li>
             <li>Demo never mixes with live worker evidence.</li>

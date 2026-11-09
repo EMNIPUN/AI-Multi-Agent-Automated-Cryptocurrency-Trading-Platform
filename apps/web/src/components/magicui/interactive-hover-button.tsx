@@ -33,7 +33,7 @@ export function InteractiveHoverButton({
   );
 
   const classes = cn(
-    "group/ihb relative isolate inline-flex w-auto cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/15 bg-background px-6 py-2 text-center text-sm font-semibold",
+    "group/ihb relative isolate inline-flex w-auto cursor-pointer items-center justify-center overflow-hidden rounded-full border border-border bg-background px-6 py-2 text-center text-sm font-semibold",
     className,
   );
 

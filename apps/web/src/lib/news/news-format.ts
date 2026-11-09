@@ -84,3 +84,45 @@ export function formatMs(value: number | null | undefined) {
   if (Number.isNaN(date.getTime())) return "unavailable";
   return date.toISOString();
 }
+
+/** Short, human-readable timestamps for the news UI. */
+export function formatNewsTime(value: number | null | undefined) {
+  if (value == null) return "Unknown time";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown time";
+  const ageMs = Date.now() - date.getTime();
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (ageMs >= 0 && ageMs < minute) return "Just now";
+  if (ageMs >= 0 && ageMs < hour) return `${Math.floor(ageMs / minute)}m ago`;
+  if (ageMs >= 0 && ageMs < day) return `${Math.floor(ageMs / hour)}h ago`;
+  if (ageMs >= 0 && ageMs < 7 * day) return `${Math.floor(ageMs / day)}d ago`;
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function friendlySchedulerNote(note: unknown): { summary: string; detail: string | null } {
+  const raw = String(note || "").trim();
+  if (!raw) {
+    return { summary: "No scheduler note from the server.", detail: null };
+  }
+  const lower = raw.toLowerCase();
+  if (lower.includes("auto") && (lower.includes("off") || lower.includes("manual"))) {
+    return {
+      summary: "Automatic collection is off — news updates when an operator runs a manual collect.",
+      detail: raw,
+    };
+  }
+  if (lower.includes("stale") || lower.includes("delayed")) {
+    return {
+      summary: "Feed looks delayed. Refresh or ask an operator to collect again.",
+      detail: raw,
+    };
+  }
+  return { summary: raw.length > 140 ? `${raw.slice(0, 140)}…` : raw, detail: raw.length > 140 ? raw : null };
+}

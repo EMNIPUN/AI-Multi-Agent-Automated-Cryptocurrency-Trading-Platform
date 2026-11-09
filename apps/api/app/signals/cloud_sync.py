@@ -142,6 +142,16 @@ def drain_outbox_once(
             **sync_health(store),
         }
 
+    if store.outbox_backend() != "sqlite":
+        return {
+            "drained": 0,
+            "synced": 0,
+            "failed": 0,
+            "permanent_failure": 0,
+            "skipped_reason": "outbox_not_applicable_signal_history_is_authoritative",
+            **sync_health(store),
+        }
+
     recovered = store.recover_stale_in_progress(now_ms=now_ms)
     pending = store.claim_outbox_batch(
         now_ms=now_ms, limit=limit, lease_ms=_LEASE_MS

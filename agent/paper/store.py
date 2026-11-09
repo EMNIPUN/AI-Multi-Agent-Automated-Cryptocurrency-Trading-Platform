@@ -55,9 +55,10 @@ def new_id(prefix: str) -> str:
 class PaperStore:
     """Thread-safe paper broker store backed by SQLAlchemy (Postgres SoT or offline SQLite)."""
 
-    def __init__(self, db_path: str | Path | None = None) -> None:
-        self._owner = resolve_sot_owner_user_id()
-        self._engine = create_agent_engine(db_path)
+    def __init__(self, db_path: str | Path | None = None, *, isolated_sqlite: bool = False) -> None:
+        self._isolated_sqlite = isolated_sqlite
+        self._owner = resolve_sot_owner_user_id(required=False if isolated_sqlite else None)
+        self._engine = create_agent_engine(db_path, isolated_sqlite=isolated_sqlite)
         bootstrap_agent_schema(self._engine)
         self._Session = agent_sessionmaker(self._engine)
         self._lock = threading.RLock()

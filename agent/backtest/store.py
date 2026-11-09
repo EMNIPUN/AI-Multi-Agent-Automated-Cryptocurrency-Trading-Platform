@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import uuid
 from pathlib import Path
 
@@ -14,14 +13,8 @@ BACKTEST_JOURNAL_PREFIX = "bt68a_"
 
 
 def ensure_offline_sot() -> None:
-    """Force offline SQLite engines for backtest persistence (no remote SoT writes)."""
-    os.environ["SUPABASE_SOT_ENABLED"] = "false"
-    try:
-        from apps.api.app.config import clear_settings_cache
-
-        clear_settings_cache()
-    except Exception:  # noqa: BLE001
-        pass
+    """Kept for callers. Isolation is per journal and does not change process settings."""
+    return None
 
 
 def isolated_journal_path(base_dir: str | Path | None = None) -> Path:
@@ -31,17 +24,14 @@ def isolated_journal_path(base_dir: str | Path | None = None) -> Path:
 
 
 def open_isolated_paper_store(journal_path: str | Path) -> PaperStore:
-    ensure_offline_sot()
     path = Path(journal_path)
     if path.exists():
         path.unlink()
-    # Guard: never open default user journal paths for backtests.
     name = path.name.lower()
     if "cryptonova_paper.sqlite3" in name and BACKTEST_JOURNAL_PREFIX not in name:
         raise RuntimeError("refusing to use primary paper journal for backtest isolation")
-    return PaperStore(path)
+    return PaperStore(path, isolated_sqlite=True)
 
 
 def open_isolated_read_store(journal_path: str | Path) -> PaperReadStore:
-    ensure_offline_sot()
-    return PaperReadStore(journal_path)
+    return PaperReadStore(journal_path, isolated_sqlite=True)

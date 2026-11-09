@@ -52,6 +52,7 @@ class PostgresNewsRepository:
             )
         self._engine = engine
         self._Session = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+        self.revision_archive_status = "not_written"
 
     def storage_kind(self) -> str:
         return "supabase_postgres"
@@ -405,6 +406,16 @@ class PostgresNewsRepository:
                 owner_user_id=owner_user_id,
             )
         )
+        from apps.api.app.news.revision_writer import append_event_revision
+
+        archive_state = append_event_revision(
+            session,
+            event,
+            recorded_at_ms=event.classification_at_ms,
+            owner_user_id=owner_user_id,
+            delayed_provider="delayed_provider_feed" in event.warnings,
+        )
+        self.revision_archive_status = archive_state
 
     def _record_run(
         self,

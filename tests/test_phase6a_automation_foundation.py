@@ -46,6 +46,8 @@ def _req(**kwargs) -> SignalExecutionRequest:
 def test_default_mode_signals_only(monkeypatch) -> None:
     monkeypatch.delenv("CRYPTONOVA_TRADING_MODE", raising=False)
     monkeypatch.delenv("TESTNET_ORDER_SUBMISSION_APPROVED", raising=False)
+    monkeypatch.setenv("MAINNET_TRADING_ENABLED", "false")
+    monkeypatch.setenv("AGENT_ALLOW_LIVE", "false")
     g = get_automation_gates()
     assert g.mode is TradingMode.SIGNALS_ONLY
     assert g.order_submission_allowed is False
@@ -169,12 +171,14 @@ def test_mainnet_endpoint_rejection(tmp_path: Path, monkeypatch) -> None:
         adapter=MockBybitTestnetAdapter(),
     )
     r = pipe.process(_req(decision_id="dec_mn"))
-    assert r.state == "MAINNET_LOCKED"
+    assert r.state == "MAINNET_CHAT_APPROVE_ONLY"
     assert r.submitted is False
 
 
 def test_ambiguous_timeout_reconcile(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("CRYPTONOVA_TRADING_MODE", "TESTNET_TRADING")
+    monkeypatch.setenv("MAINNET_TRADING_ENABLED", "false")
+    monkeypatch.setenv("AGENT_ALLOW_LIVE", "false")
     monkeypatch.setenv("TESTNET_TRADING_ENABLED", "true")
     monkeypatch.setenv("TESTNET_TRADING_OPERATOR_APPROVED", "true")
     monkeypatch.setenv("TESTNET_ORDER_SUBMISSION_APPROVED", "true")
@@ -208,6 +212,8 @@ def test_gate_blocks_submission_even_in_testnet_mode(tmp_path: Path, monkeypatch
 
 def test_partial_fill_protection_reject_halts(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("CRYPTONOVA_TRADING_MODE", "TESTNET_TRADING")
+    monkeypatch.setenv("MAINNET_TRADING_ENABLED", "false")
+    monkeypatch.setenv("AGENT_ALLOW_LIVE", "false")
     monkeypatch.setenv("TESTNET_TRADING_ENABLED", "true")
     monkeypatch.setenv("TESTNET_TRADING_OPERATOR_APPROVED", "true")
     monkeypatch.setenv("TESTNET_ORDER_SUBMISSION_APPROVED", "true")
@@ -231,6 +237,8 @@ def test_partial_fill_protection_reject_halts(tmp_path: Path, monkeypatch) -> No
 
 def test_protection_verified_on_mock_fill(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("CRYPTONOVA_TRADING_MODE", "TESTNET_TRADING")
+    monkeypatch.setenv("MAINNET_TRADING_ENABLED", "false")
+    monkeypatch.setenv("AGENT_ALLOW_LIVE", "false")
     monkeypatch.setenv("TESTNET_TRADING_ENABLED", "true")
     monkeypatch.setenv("TESTNET_TRADING_OPERATOR_APPROVED", "true")
     monkeypatch.setenv("TESTNET_ORDER_SUBMISSION_APPROVED", "true")
@@ -268,6 +276,7 @@ def test_restart_recovery_intent_survives(tmp_path: Path, monkeypatch) -> None:
 
 def test_api_status_no_secrets_no_orders(monkeypatch) -> None:
     os.environ["AGENT_ALLOW_LIVE"] = "false"
+    os.environ["MAINNET_TRADING_ENABLED"] = "false"
     os.environ["CRYPTONOVA_TRADING_MODE"] = "SIGNALS_ONLY"
     clear_settings_cache()
     app = create_app(ApiSettings())

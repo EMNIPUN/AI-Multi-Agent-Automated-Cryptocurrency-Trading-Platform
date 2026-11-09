@@ -137,17 +137,18 @@
 
 ## Suggested next development milestone
 
-**69E shadow evaluation is implemented.** Historical news backtesting is **not valid** until append-only revisions exist and an operator applies `20261108_0008`, then `0009`, then `0010` on development. Do not start live trading. Keep `NEWS_LLM_ENABLED` false.
+**77 development migration:** revision `20261108_0012` is **applied** on development project `wmirifmgaftassgrfbyl`. Checksum `79d1197e675da8dd8dc057670af762a23e385ddcb1bcaf26db6b66c0a4cb11d5`. A pre-upgrade backup is in gitignored `data/backups/77_pre_0012_20261108T190406Z`. One synthetic BTC journal was exported and replayed there. The three paper sessions were not modified. The backtest runner still defaults to SQLite. Set `CRYPTONOVA_BACKTEST_JOURNAL=postgres` only when a job should also export to the development journal. Credential rotation, grants, live orders, and production deployment stay deferred. See `CRYPTONOVA_77_84_STATUS.md`.
 
 **69A / 69A.1:** News foundation and Supabase article persistence DONE.  
-**69B:** Critical alert engine DONE. Migration `20261108_0008` is written and **not applied**.  
+**69B:** Critical alert engine DONE. Migration `20261108_0008` is **applied** on development.  
 **69C:** Advisory NewsContext is attached for observability. Trading decisions are unchanged (`news_changed_decision=false`).  
-**69D:** Optional OpenAI decision support DONE as advisory comparison only. `llm_changed_decision=false`. Migration `20261108_0009` is written and **not applied**.  
-**69E:** Point-in-time shadow replay DONE as an annotation on 68A. It does not change fills. Migration `20261108_0010` is written and **not applied**. Development news history is incomplete, so news-aware performance claims are blocked.  
+**69D:** Optional OpenAI decision support DONE as advisory comparison only. `llm_changed_decision=false`. Migration `20261108_0009` is **applied** on development. The LLM flag stays false.  
+**69E:** Point-in-time shadow replay DONE as an annotation on 68A. It does not change fills. Migration `20261108_0010` is **applied** on development. Events stored before that apply have no revisions, so news-aware performance claims stay blocked.  
+**70A:** Archive writer and durable LLM budget code are in place. Migration `20261108_0011` is **applied** on development. Runtime LLM calls stay off.  
+**71:** Shadow status and LLM budget status read the live development database. Signal persistence stayed fail-closed.  
 **67–68:** paper analytics + backtest loop DONE.
 
-**Deferred until approved:** applying migrations `0008`, `0009`, and `0010`; Gate 63; live execution; any news-aware strategy change.
-
+**Deferred:** Gate 63; live execution; any news-aware strategy change; backfill of pre-archive news; credential rotation; least-privilege role swap; backtest journal cutover.
 ---
 
 ## Deferred (explicit)

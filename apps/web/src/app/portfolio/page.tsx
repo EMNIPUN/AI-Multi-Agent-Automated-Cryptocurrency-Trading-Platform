@@ -1,9 +1,9 @@
 "use client";
 
 import { WalletBalancePanel } from "@/components/WalletBalancePanel";
+import { PageFrame, SectionPanel } from "@/components/command-center";
 import { BlurFade } from "@/components/magicui/blur-fade";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
-import { PageHeader } from "@/components/shared/PageHeader";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -14,11 +14,11 @@ import { Separator } from "@/components/ui/separator";
 
 export default function PortfolioPage() {
   return (
-    <div className="space-y-4 pb-6">
-      <PageHeader
-        title="Portfolio"
-        description="Live Bybit UNIFIED wallet via the server-side read adapter. Allocation shares are computed only from returned coin equity — nothing is invented."
-      />
+    <PageFrame
+      title="Portfolio"
+      description="Live Bybit UNIFIED wallet via the server-side read adapter. Allocation shares are computed only from returned coin equity — nothing is invented."
+      modes={["readonly", "live"]}
+    >
       <DataModeBanner
         mode="demo"
         notes={[
@@ -29,7 +29,7 @@ export default function PortfolioPage() {
       />
 
       <BlurFade>
-        <div className="hidden h-[min(78vh,52rem)] overflow-hidden rounded-3xl border border-white/10 bg-black/20 lg:block">
+        <div className="hidden h-[min(78vh,52rem)] overflow-hidden rounded-3xl border border-border bg-muted/40 lg:block">
           <ResizablePanelGroup direction="vertical" className="h-full">
             <ResizablePanel defaultSize={74} minSize={48}>
               <ScrollArea className="h-full">
@@ -43,25 +43,25 @@ export default function PortfolioPage() {
               <ScrollArea className="h-full">
                 <div className="flex flex-col gap-3 p-4 md:p-5">
                   <div>
-                    <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-amber-200/80">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-brand">
                       How to read this
                     </p>
-                    <h2 className="mt-1 text-lg font-medium tracking-tight text-white">
+                    <h2 className="mt-1 text-lg font-medium tracking-tight text-foreground">
                       Portfolio safety notes
                     </h2>
                   </div>
-                  <Separator className="bg-white/10" />
-                  <ul className="space-y-2 text-sm text-white/60">
+                  <Separator className="bg-muted/40" />
+                  <ul className="space-y-2 text-sm text-foreground">
                     <li>
-                      <span className="text-white/90">Overview</span> shows top holdings and
+                      <span className="text-foreground">Overview</span> shows top holdings and
                       snapshot facts before you dig into the table.
                     </li>
                     <li>
-                      <span className="text-white/90">Filters</span> — All, Majors, With P&L,
-                      Dust (&lt;1% share) — only hide rows; they never invent balances.
+                      <span className="text-foreground">Filters</span> only hide rows; they never
+                      invent balances.
                     </li>
                     <li>
-                      <span className="text-white/90">Open P&L</span> is perpetual unrealised P&L
+                      <span className="text-foreground">Open P&L</span> is perpetual unrealised P&L
                       only — not closed trades.
                     </li>
                   </ul>
@@ -73,8 +73,10 @@ export default function PortfolioPage() {
       </BlurFade>
 
       <div className="lg:hidden">
-        <WalletBalancePanel />
+        <SectionPanel title="Holdings" description="Mobile wallet snapshot">
+          <WalletBalancePanel />
+        </SectionPanel>
       </div>
-    </div>
+    </PageFrame>
   );
 }

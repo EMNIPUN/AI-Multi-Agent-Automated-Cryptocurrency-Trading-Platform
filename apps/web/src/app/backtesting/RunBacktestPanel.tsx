@@ -271,10 +271,10 @@ export function RunBacktestPanel({ onRunCompleted }: Props) {
     marketChoice === "linear" || marketChoice === "both";
 
   return (
-    <section className="w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+    <section className="w-full min-w-0 max-w-full rounded-2xl border border-border bg-muted/30 p-4 md:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-medium text-white">Run historical backtest</h2>
+          <h2 className="text-base font-medium text-foreground">Run historical backtest</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Explicit operator action only. Reuses Multi-Agent Pipeline 4B + engine 68A. Never places
             live orders.
@@ -291,7 +291,7 @@ export function RunBacktestPanel({ onRunCompleted }: Props) {
         </Badge>
       </div>
 
-      <p className="mt-3 text-xs uppercase tracking-[0.14em] text-amber-200/70">{SIM_LABEL}</p>
+      <p className="mt-3 text-xs uppercase tracking-[0.14em] text-orange-300/75">{SIM_LABEL}</p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="min-w-0">
@@ -419,11 +419,11 @@ export function RunBacktestPanel({ onRunCompleted }: Props) {
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col gap-3 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="mt-4 flex flex-col gap-3 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="break-words text-white">
+          <p className="break-words text-foreground">
             Will run:{" "}
-            <span className="text-white/70">
+            <span className="text-foreground">
               {marketsToRun
                 .map((m) => (m === "spot" ? "Spot" : "Futures (Linear)"))
                 .join(" → then ")}
@@ -431,8 +431,8 @@ export function RunBacktestPanel({ onRunCompleted }: Props) {
           </p>
           <p className="mt-1 break-words text-muted-foreground">
             Estimated candles each:{" "}
-            <span className="font-mono text-white/80">{estimated}</span>
-            <span className="mx-2 text-white/20">·</span>
+            <span className="font-mono text-foreground">{estimated}</span>
+            <span className="mx-2 text-foreground">·</span>
             Source: Bybit public history
           </p>
         </div>
@@ -473,15 +473,15 @@ export function RunBacktestPanel({ onRunCompleted }: Props) {
           {jobs.map((job) => (
             <div
               key={job.job_id}
-              className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm"
+              className="rounded-xl border border-border bg-muted/70 px-4 py-3 text-sm"
             >
-              <p className="text-white">
-                <span className="text-white/60">
+              <p className="text-foreground">
+                <span className="text-foreground">
                   {String(job.request_summary?.market_type || "").toUpperCase() || "JOB"}
                 </span>
-                <span className="mx-2 text-white/30">·</span>
+                <span className="mx-2 text-foreground">·</span>
                 <span className="font-mono text-xs">{job.job_id}</span>
-                <span className="mx-2 text-white/30">·</span>
+                <span className="mx-2 text-foreground">·</span>
                 <Badge variant="outline">{job.status}</Badge>
                 {job.phase ? (
                   <span className="ml-2 text-xs text-muted-foreground">phase: {job.phase}</span>

@@ -87,7 +87,7 @@ def _evaluate_signal_risk_core(
     reasons: list[str] = []
     paper = config.paper_balance
 
-    if state.halted or abs(state.hypothetical_day_pnl) >= paper * config.daily_loss_halt_fraction:
+    if state.halted or state.hypothetical_day_pnl <= -paper * config.daily_loss_halt_fraction:
         state.halted = True
         return RiskAssessment(
             verdict=RiskVerdict.HALTED,

@@ -38,10 +38,10 @@ export function NewsAlertStrip() {
   }, []);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
       <div>
         <p className="text-sm font-medium">News alerts</p>
-        <p className="text-xs text-white/50">
+        <p className="text-xs text-foreground">
           {state === "loading" && "Checking alert storage…"}
           {state === "disabled" && "Alert engine is off. No demo alerts are shown."}
           {state === "error" && "Alert center unavailable. News storage did not respond."}
@@ -50,7 +50,7 @@ export function NewsAlertStrip() {
       </div>
       <div className="flex items-center gap-2">
         {state === "ready" && unread > 0 ? <Badge variant="danger">{unread} unread</Badge> : null}
-        <Link href="/news" className="text-sm text-white/80 underline-offset-4 hover:underline">
+        <Link href="/news" className="text-sm text-foreground underline-offset-4 hover:underline">
           Open news
         </Link>
       </div>

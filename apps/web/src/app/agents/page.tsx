@@ -1,100 +1,62 @@
+"use client";
+
 import Link from "next/link";
 
+import { PageFrame, SectionPanel } from "@/components/command-center";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
-import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const AGENTS = [
-  {
-    name: "Market Data Agent",
-    status: "Implemented",
-    detail: "Confirmed public candles, spot/perp isolation, stale rejection",
-    href: "/agents/live",
-    ready: true,
-  },
-  {
-    name: "Trend Agent",
-    status: "Implemented",
-    detail: "EMA20/50/200 alignment and crossover state — BULLISH/BEARISH/NEUTRAL",
-    href: "/agents/live",
-    ready: true,
-  },
-  {
-    name: "Momentum Agent",
-    status: "Implemented",
-    detail: "RSI14 + momentum/volume context — never OB/OS alone as BUY/SELL",
-    href: "/agents/live",
-    ready: true,
-  },
-  {
-    name: "Risk Agent",
-    status: "Implemented",
-    detail: "Paper-capital sizing, veto, cooldown, daily halt — no live balances",
-    href: "/agents/live",
-    ready: true,
-  },
-  {
-    name: "Decision Coordinator",
-    status: "Implemented",
-    detail: "BUY/SELL/HOLD/BLOCKED with explainable score — signals only",
-    href: "/agents/live",
-    ready: true,
-  },
-  {
-    name: "EMA/RSI Runner",
-    status: "Implemented",
-    detail: "Legacy single-strategy AgentRunner (still dry-run by default)",
-    href: "/agents/live",
-    ready: true,
-  },
-  {
-    name: "SMC Agent",
-    status: "Coming Soon",
-    detail: "Smart-money concepts package not implemented",
-    href: null,
-    ready: false,
-  },
-];
+import { AGENT_REGISTRY } from "@/lib/agents/registry";
 
 export default function AgentsPage() {
   return (
-    <div>
-      <PageHeader
-        title="Agents"
-        description="Phase 4A multi-agent signals foundation. No real order submission."
-      />
+    <PageFrame
+      title="Agent Workspace"
+      description="Shared registry aligned with the SignalPipeline spine. Live contributions appear on Autonomous Trading and Live AI Analysis."
+      modes={["readonly", "paper", "live"]}
+      actions={
+        <Button asChild variant="secondary" className="rounded-full">
+          <Link href="/autonomy">Open Autonomous Trading</Link>
+        </Button>
+      }
+    >
       <DataModeBanner
-        mode="demo"
+        mode="paper"
         notes={[
-          "Signals are not executed trades",
-          "Risk Agent veto cannot be overridden",
-          "AGENT_ALLOW_LIVE stays false",
+          "Volume and structure agents are active in STRATEGY_VERSION 6.x.",
+          "LLM/news remain advisory and cannot change BUY/SELL.",
+          "No agent in this catalog places live exchange orders.",
         ]}
       />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {AGENTS.map((a) => (
-          <Card key={a.name}>
-            <CardHeader>
-              <CardTitle className="text-base">{a.name}</CardTitle>
-              <CardDescription>{a.detail}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Badge variant={a.ready ? "success" : "secondary"}>{a.status}</Badge>
-              {a.href ? (
-                <Button asChild size="sm">
-                  <Link href={a.href}>Open Agent Studio</Link>
-                </Button>
-              ) : (
-                <Button size="sm" disabled>
-                  Coming soon
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+      <SectionPanel title="Registered agents" description="Source: lib/agents/registry.ts ↔ backend REGISTRY">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {AGENT_REGISTRY.map((agent) => (
+            <div
+              key={agent.agent_id}
+              className="rounded-2xl border border-border bg-muted/30 p-4"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{agent.label}</p>
+                  <p className="mt-1 font-mono text-[10px] text-muted-foreground">{agent.agent_id}</p>
+                </div>
+                <Badge variant="outline" className="rounded-full">
+                  {agent.places_orders ? "Orders" : "Signals"}
+                </Badge>
+              </div>
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{agent.role}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm" className="rounded-full">
+            <Link href="/agents/live">Live AI Analysis</Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm" className="rounded-full">
+            <Link href="/orchestrator">Orchestrator chat</Link>
+          </Button>
+        </div>
+      </SectionPanel>
+    </PageFrame>
   );
 }

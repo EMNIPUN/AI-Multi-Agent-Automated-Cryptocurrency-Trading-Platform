@@ -23,7 +23,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     if (!ready || !mustProtect) return;
     if (!configured) return;
     if (!session) {
-      const next = encodeURIComponent(pathname || "/dashboard");
+      const next = encodeURIComponent(pathname || "/orchestrator");
       router.replace(`/login?next=${next}`);
     }
   }, [ready, mustProtect, configured, session, pathname, router]);
@@ -46,11 +46,11 @@ export function RequireAuth({ children }: { children: ReactNode }) {
         <p className="font-display text-lg text-foreground">Auth is not configured</p>
         <p className="mt-2">
           Set{" "}
-          <span className="font-mono text-cyan-300">NEXT_PUBLIC_SUPABASE_URL</span> and{" "}
-          <span className="font-mono text-cyan-300">NEXT_PUBLIC_SUPABASE_ANON_KEY</span> to enable
+          <span className="font-mono text-orange-300">NEXT_PUBLIC_SUPABASE_URL</span> and{" "}
+          <span className="font-mono text-orange-300">NEXT_PUBLIC_SUPABASE_ANON_KEY</span> to enable
           sign-in.
         </p>
-        <Button asChild variant="cyan" className="mt-4">
+        <Button asChild variant="brand" className="mt-4">
           <Link href="/">Back to home</Link>
         </Button>
       </div>

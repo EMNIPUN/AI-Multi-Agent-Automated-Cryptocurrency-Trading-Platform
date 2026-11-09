@@ -78,13 +78,13 @@ function FilterChip({
       className={cn(
         "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
         active
-          ? "bg-white text-black"
-          : "bg-white/5 text-white/55 hover:bg-white/10 hover:text-white",
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted/40 text-foreground hover:bg-muted/40 hover:text-foreground",
       )}
     >
       {children}
       {typeof count === "number" ? (
-        <span className={cn("ml-1.5 tabular-nums", active ? "text-black/60" : "text-white/35")}>
+        <span className={cn("ml-1.5 tabular-nums", active ? "text-black/60" : "text-foreground")}>
           {count}
         </span>
       ) : null}
@@ -101,7 +101,7 @@ function PanelSkeleton() {
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div key={i} className="rounded-2xl border border-border bg-muted/40 p-4">
             <Skeleton className="h-3 w-20 rounded-full" />
             <Skeleton className="mt-3 h-8 w-28 rounded-md" />
           </div>
@@ -311,11 +311,11 @@ export function PositionsOrdersPanel() {
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card/60 p-5 md:p-6">
-      <BorderBeam size={190} duration={13} colorFrom="#f59e0b" colorTo="#ffffff" />
+      <BorderBeam size={190} duration={13} colorFrom="#F7A600" colorTo="#FFCE6E" />
       <div className="relative z-10 flex flex-row items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 font-display text-xl tracking-tight">
-            <Briefcase className="h-4 w-4 text-white/80" />
+            <Briefcase className="h-4 w-4 text-foreground" />
             Positions & orders
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -379,8 +379,8 @@ export function PositionsOrdersPanel() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="relative overflow-hidden rounded-2xl border border-dashed border-white/15 bg-black/25 p-8 text-center">
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5">
+              <div className="relative overflow-hidden rounded-2xl border border-dashed border-border bg-muted/50 p-8 text-center">
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted/40">
                   <Briefcase className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <Badge variant="outline" className="mt-3 rounded-full">
@@ -391,8 +391,8 @@ export function PositionsOrdersPanel() {
                   A live snapshot is not connected. This panel will not invent exposure.
                 </p>
               </div>
-              <div className="relative overflow-hidden rounded-2xl border border-dashed border-white/15 bg-black/25 p-8 text-center">
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5">
+              <div className="relative overflow-hidden rounded-2xl border border-dashed border-border bg-muted/50 p-8 text-center">
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted/40">
                   <ListOrdered className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <Badge variant="outline" className="mt-3 rounded-full">
@@ -457,10 +457,10 @@ export function PositionsOrdersPanel() {
 
               <TabsContent value="overview" className="mt-4 space-y-4">
                 <div className="grid gap-4 lg:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                  <div className="rounded-2xl border border-border bg-muted/50 p-4">
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <div>
-                        <p className="text-sm font-medium text-white">Open exposure</p>
+                        <p className="text-sm font-medium text-foreground">Open exposure</p>
                         <p className="text-xs text-muted-foreground">
                           From paper journal only — nothing invented
                         </p>
@@ -490,10 +490,10 @@ export function PositionsOrdersPanel() {
                                 setSelectedPositionId(p.position_id);
                                 setView("positions");
                               }}
-                              className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+                              className="w-full rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-left transition-colors hover:bg-muted/40"
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <span className="font-medium text-white">{p.symbol}</span>
+                                <span className="font-medium text-foreground">{p.symbol}</span>
                                 <Badge variant="outline" className="rounded-full">
                                   {p.side}
                                 </Badge>
@@ -511,10 +511,10 @@ export function PositionsOrdersPanel() {
                     </ScrollArea>
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-                    <p className="text-sm font-medium text-white">Snapshot</p>
+                  <div className="rounded-2xl border border-border bg-muted/50 p-4">
+                    <p className="text-sm font-medium text-foreground">Snapshot</p>
                     <p className="text-xs text-muted-foreground">Adapter + session facts</p>
-                    <Separator className="my-3 bg-white/10" />
+                    <Separator className="my-3 bg-muted/40" />
                     <ScrollArea className="h-56">
                       <dl className="space-y-2 pr-3 text-sm">
                         {[
@@ -530,10 +530,10 @@ export function PositionsOrdersPanel() {
                         ].map(([label, value]) => (
                           <div
                             key={label}
-                            className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                            className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2"
                           >
                             <dt className="text-muted-foreground">{label}</dt>
-                            <dd className="max-w-[60%] truncate font-mono text-white/85">
+                            <dd className="max-w-[60%] truncate font-mono text-foreground">
                               {value}
                             </dd>
                           </div>
@@ -545,7 +545,7 @@ export function PositionsOrdersPanel() {
               </TabsContent>
 
               <TabsContent value="positions" className="mt-4 space-y-3">
-                <div className="flex flex-wrap items-center gap-1.5 rounded-full border border-white/10 bg-black/40 p-1.5">
+                <div className="flex flex-wrap items-center gap-1.5 rounded-full border border-border bg-muted/70 p-1.5">
                   <FilterChip
                     active={positionFilter === "all"}
                     count={positionCounts.all}
@@ -569,17 +569,17 @@ export function PositionsOrdersPanel() {
                   </FilterChip>
                 </div>
 
-                <div className="h-[28rem] overflow-hidden rounded-2xl border border-white/10 bg-black/25">
+                <div className="h-[28rem] overflow-hidden rounded-2xl border border-border bg-muted/50">
                   <ResizablePanelGroup direction="horizontal" className="h-full">
                     <ResizablePanel defaultSize={62} minSize={40}>
                       <div className="flex h-full flex-col">
                         <div className="px-4 py-3">
-                          <p className="text-sm font-medium text-white">Positions</p>
+                          <p className="text-sm font-medium text-foreground">Positions</p>
                           <p className="text-xs text-muted-foreground">
                             Showing {filteredPositions.length} of {positions.length}
                           </p>
                         </div>
-                        <Separator className="bg-white/10" />
+                        <Separator className="bg-muted/40" />
                         <ScrollArea className="min-h-0 flex-1">
                           {filteredPositions.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
@@ -608,7 +608,7 @@ export function PositionsOrdersPanel() {
                                   return (
                                     <TableRow
                                       key={p.position_id}
-                                      className={cn("cursor-pointer", active && "bg-white/5")}
+                                      className={cn("cursor-pointer", active && "bg-muted/40")}
                                       onClick={() => setSelectedPositionId(p.position_id)}
                                       data-state={active ? "selected" : undefined}
                                     >
@@ -636,11 +636,11 @@ export function PositionsOrdersPanel() {
                     <ResizableHandle withHandle />
                     <ResizablePanel defaultSize={38} minSize={26}>
                       <div className="flex h-full flex-col p-4">
-                        <p className="text-sm font-medium text-white">Position detail</p>
+                        <p className="text-sm font-medium text-foreground">Position detail</p>
                         <p className="text-xs text-muted-foreground">
                           Select a row · ACCEPTED ≠ FILLED
                         </p>
-                        <Separator className="my-3 bg-white/10" />
+                        <Separator className="my-3 bg-muted/40" />
                         <ScrollArea className="min-h-0 flex-1">
                           {selectedPosition ? (
                             <dl className="space-y-2 pr-3 text-sm">
@@ -661,12 +661,12 @@ export function PositionsOrdersPanel() {
                               ].map(([label, value]) => (
                                 <div
                                   key={label}
-                                  className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2"
                                 >
                                   <dt className="text-muted-foreground">{label}</dt>
                                   <dd
                                     className={cn(
-                                      "max-w-[55%] truncate font-mono text-white/90",
+                                      "max-w-[55%] truncate font-mono text-foreground",
                                       String(label).includes("P&L")
                                         ? pnlTone(value)
                                         : undefined,
@@ -695,7 +695,7 @@ export function PositionsOrdersPanel() {
               </TabsContent>
 
               <TabsContent value="orders" className="mt-4 space-y-3">
-                <div className="flex flex-wrap items-center gap-1.5 rounded-full border border-white/10 bg-black/40 p-1.5">
+                <div className="flex flex-wrap items-center gap-1.5 rounded-full border border-border bg-muted/70 p-1.5">
                   <FilterChip
                     active={orderFilter === "all"}
                     count={orderCounts.all}
@@ -726,17 +726,17 @@ export function PositionsOrdersPanel() {
                   </FilterChip>
                 </div>
 
-                <div className="h-[28rem] overflow-hidden rounded-2xl border border-white/10 bg-black/25">
+                <div className="h-[28rem] overflow-hidden rounded-2xl border border-border bg-muted/50">
                   <ResizablePanelGroup direction="horizontal" className="h-full">
                     <ResizablePanel defaultSize={62} minSize={40}>
                       <div className="flex h-full flex-col">
                         <div className="px-4 py-3">
-                          <p className="text-sm font-medium text-white">Orders</p>
+                          <p className="text-sm font-medium text-foreground">Orders</p>
                           <p className="text-xs text-muted-foreground">
                             Showing {filteredOrders.length} of {orders.length}
                           </p>
                         </div>
-                        <Separator className="bg-white/10" />
+                        <Separator className="bg-muted/40" />
                         <ScrollArea className="min-h-0 flex-1">
                           {filteredOrders.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
@@ -763,7 +763,7 @@ export function PositionsOrdersPanel() {
                                   return (
                                     <TableRow
                                       key={o.order_id}
-                                      className={cn("cursor-pointer", active && "bg-white/5")}
+                                      className={cn("cursor-pointer", active && "bg-muted/40")}
                                       onClick={() => setSelectedOrderId(o.order_id)}
                                       data-state={active ? "selected" : undefined}
                                     >
@@ -791,11 +791,11 @@ export function PositionsOrdersPanel() {
                     <ResizableHandle withHandle />
                     <ResizablePanel defaultSize={38} minSize={26}>
                       <div className="flex h-full flex-col p-4">
-                        <p className="text-sm font-medium text-white">Order detail</p>
+                        <p className="text-sm font-medium text-foreground">Order detail</p>
                         <p className="text-xs text-muted-foreground">
                           Cancel / place controls are not in this UI
                         </p>
-                        <Separator className="my-3 bg-white/10" />
+                        <Separator className="my-3 bg-muted/40" />
                         <ScrollArea className="min-h-0 flex-1">
                           {selectedOrder ? (
                             <dl className="space-y-2 pr-3 text-sm">
@@ -816,10 +816,10 @@ export function PositionsOrdersPanel() {
                               ].map(([label, value]) => (
                                 <div
                                   key={label}
-                                  className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2"
                                 >
                                   <dt className="text-muted-foreground">{label}</dt>
-                                  <dd className="max-w-[55%] truncate font-mono text-white/90">
+                                  <dd className="max-w-[55%] truncate font-mono text-foreground">
                                     {value == null || value === "" ? "—" : value}
                                   </dd>
                                 </div>

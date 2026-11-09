@@ -14,7 +14,7 @@ export function CodeBlock({
     <div
       data-slot="code-block"
       className={cn(
-        "overflow-hidden rounded-xl border border-white/10 bg-black/50 text-left font-mono text-white/85",
+        "overflow-hidden rounded-xl border border-border bg-muted/80 text-left font-mono text-foreground",
         size === "sm" ? "text-[11px]" : "text-xs",
         className,
       )}
@@ -35,7 +35,7 @@ export function CodeBlockContent({
     <pre
       data-slot="code-block-content"
       className={cn(
-        "overflow-auto p-3 leading-relaxed text-white/80",
+        "overflow-auto p-3 leading-relaxed text-foreground",
         wrap ? "whitespace-pre-wrap break-words" : "whitespace-pre",
         className,
       )}

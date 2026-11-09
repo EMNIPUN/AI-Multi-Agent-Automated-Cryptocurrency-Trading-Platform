@@ -95,9 +95,9 @@ function Stat({
   valueClassName?: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
+    <div className="rounded-xl border border-border bg-muted/30 px-4 py-3">
       <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-lg ${valueClassName ?? "font-mono text-white"}`}>{value}</p>
+      <p className={`mt-1 text-lg ${valueClassName ?? "font-mono text-foreground"}`}>{value}</p>
       {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
@@ -112,7 +112,7 @@ function SectionTitle({
 }) {
   return (
     <div className="mb-4">
-      <h2 className="text-base font-medium text-white">{title}</h2>
+      <h2 className="text-base font-medium text-foreground">{title}</h2>
       {description ? (
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       ) : null}
@@ -321,16 +321,16 @@ export function BacktestingDashboard() {
   return (
     <div className="w-full min-w-0 max-w-full space-y-6 overflow-x-hidden">
       {/* Hero — one composition */}
-      <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-zinc-950 via-black to-black px-5 py-8 md:px-8 md:py-10">
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-b from-zinc-950 via-black to-black px-5 py-8 md:px-8 md:py-10">
         <Ripple className="opacity-30" mainCircleSize={90} numCircles={5} />
         <div className="relative z-10 max-w-3xl">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-amber-200/70">
-            CryptoNova
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-orange-300/75">
+            Research & Intelligence
           </p>
-          <h1 className="mt-2 text-3xl font-medium tracking-tight text-white md:text-4xl">
+          <h1 className="mt-2 text-3xl font-medium tracking-tight text-foreground md:text-4xl">
             Backtesting
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/65">
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-foreground">
             Configure and run historical multi-agent simulations, then inspect saved reports.
             Live trading stays off — runs require an explicit click and a separate feature gate.
           </p>
@@ -342,17 +342,17 @@ export function BacktestingDashboard() {
             <Badge variant="outline">Live trading off</Badge>
           </div>
           <div className="mt-5 flex flex-wrap gap-3 text-sm">
-            <Link href="/analytics" className="text-white/60 underline-offset-4 hover:text-white hover:underline">
+            <Link href="/analytics" className="text-foreground underline-offset-4 hover:text-foreground hover:underline">
               Paper analytics
             </Link>
-            <Link href="/agents/live" className="text-white/60 underline-offset-4 hover:text-white hover:underline">
+            <Link href="/agents/live" className="text-foreground underline-offset-4 hover:text-foreground hover:underline">
               Agent Studio
             </Link>
           </div>
         </div>
       </section>
 
-      <Marquee pauseOnHover className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] [--duration:28s]">
+      <Marquee pauseOnHover className="min-w-0 overflow-hidden rounded-xl border border-border bg-muted/30 [--duration:28s]">
         {[
           SIM_LABEL,
           status?.enabled ? `${status.run_count} saved run(s)` : "API disabled",
@@ -362,7 +362,7 @@ export function BacktestingDashboard() {
         ].map((item) => (
           <span
             key={item}
-            className="mx-3 rounded-full border border-white/10 bg-black/50 px-3 py-1 text-xs text-white/70"
+            className="mx-3 rounded-full border border-border bg-muted/80 px-3 py-1 text-xs text-foreground"
           >
             {item}
           </span>
@@ -442,10 +442,10 @@ export function BacktestingDashboard() {
       />
 
       {status?.enabled && runs.length > 0 ? (
-        <section className="w-full min-w-0 max-w-full rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+        <section className="w-full min-w-0 max-w-full rounded-2xl border border-border bg-muted/30 p-4 md:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h2 className="text-base font-medium text-white">Choose a saved run</h2>
+              <h2 className="text-base font-medium text-foreground">Choose a saved run</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Pick a saved simulation. Filters narrow the list — they do not re-run anything.
               </p>
@@ -468,7 +468,7 @@ export function BacktestingDashboard() {
           </div>
 
           {showFilters ? (
-            <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl border border-white/10 bg-black/40 p-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl border border-border bg-muted/70 p-3 sm:grid-cols-2 xl:grid-cols-3">
               <div className="min-w-0">
                 <p className="mb-1.5 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                   Status
@@ -657,7 +657,7 @@ export function BacktestingDashboard() {
               title="Dataset provenance"
               description="Where the candles came from — synthetic is not live exchange validation."
             />
-            <div className="space-y-2 rounded-xl border border-white/10 bg-black/30 p-4 text-sm">
+            <div className="space-y-2 rounded-xl border border-border bg-muted/50 p-4 text-sm">
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline">{detail.dataset_label}</Badge>
                 <Badge variant="outline">{String(cfg.data_source ?? ds.source_kind ?? "—")}</Badge>
@@ -727,7 +727,7 @@ export function BacktestingDashboard() {
               title="Equity curve"
               description="Snapshot observations only — sparse points can understate true intraperiod drawdown."
             />
-            <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+            <div className="rounded-xl border border-border bg-muted/50 p-4">
               <Select
                 value={series}
                 onValueChange={(v) => setSeries(v === "realized" ? "realized" : "marked")}
@@ -773,7 +773,7 @@ export function BacktestingDashboard() {
             {!trades || trades.items.length === 0 ? (
               <p className="text-sm text-muted-foreground">No closed trades in this run.</p>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-white/10">
+              <div className="overflow-x-auto rounded-xl border border-border">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -838,8 +838,8 @@ export function BacktestingDashboard() {
               </div>
             ) : null}
             {trades && trades.open_positions.length > 0 ? (
-              <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-sm">
-                <p className="mb-2 font-medium text-white">Still open at dataset end</p>
+              <div className="rounded-xl border border-border bg-muted/50 p-3 text-sm">
+                <p className="mb-2 font-medium text-foreground">Still open at dataset end</p>
                 {trades.open_positions.map((p, i) => (
                   <p key={i} className="text-xs text-muted-foreground">
                     {String(p.symbol)} · qty {String(p.quantity)} · entry {String(p.entry_price)}
@@ -867,7 +867,7 @@ export function BacktestingDashboard() {
             {!orders || orders.items.length === 0 ? (
               <p className="text-sm text-muted-foreground">No order submits recorded.</p>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-white/10">
+              <div className="overflow-x-auto rounded-xl border border-border">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -924,7 +924,7 @@ export function BacktestingDashboard() {
             {!decisions || decisions.items.length === 0 ? (
               <p className="text-sm text-muted-foreground">No decision traces for this run.</p>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-white/10">
+              <div className="overflow-x-auto rounded-xl border border-border">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1058,8 +1058,8 @@ export function BacktestingDashboard() {
             </ul>
             {(equity?.data_quality_warnings?.length ||
               detail.data_quality_warnings.length) > 0 ? (
-              <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-                <p className="mb-2 text-sm font-medium text-white">Data-quality notices</p>
+              <div className="rounded-xl border border-border bg-muted/50 p-4">
+                <p className="mb-2 text-sm font-medium text-foreground">Data-quality notices</p>
                 <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
                   {[
                     ...(equity?.data_quality_warnings || []),

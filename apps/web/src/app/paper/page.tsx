@@ -5,8 +5,8 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { LogoLoader } from "@/components/brand/LogoLoader";
+import { PageFrame } from "@/components/command-center";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
-import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -187,11 +187,11 @@ function PaperPageInner() {
   }
 
   return (
-    <div>
-      <PageHeader
-        title="Paper trading journal"
-        description="Read-only view of local simulated sessions. No exchange orders. SIMULATED / PAPER ONLY."
-      />
+    <PageFrame
+      title="Paper Trading"
+      description="Read-only view of local simulated sessions. No exchange orders. SIMULATED / PAPER ONLY."
+      modes={["paper", "live", "readonly"]}
+    >
       {sessionId ? (
         <p className="mb-3 text-sm">
           <Link
@@ -409,7 +409,7 @@ function PaperPageInner() {
           </Section>
         </>
       ) : null}
-    </div>
+    </PageFrame>
   );
 }
 

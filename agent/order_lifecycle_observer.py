@@ -13,8 +13,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
-from sqlalchemy.exc import SQLAlchemyError
-
 from agent.intent_store import IntentStore, IntentStoreError
 from agent.order_intent import OrderIntent, OrderIntentState
 from agent.telemetry_ledger import TelemetryLedger, make_event
@@ -131,9 +129,10 @@ class OrderLifecycleObserver:
                     self.account_fp,
                     limit=self.limit,
                 )
-            except (SQLAlchemyError, IntentStoreError, OSError) as exc:
+            except Exception as exc:  # noqa: BLE001 — sqlite lock text is not one exception class
                 last_exc = exc
-                if "locked" in str(exc).lower() or "busy" in str(exc).lower():
+                message = str(exc).lower()
+                if "locked" in message or "busy" in message:
                     time.sleep(self.busy_sleep_s * (attempt + 1))
                     continue
                 raise

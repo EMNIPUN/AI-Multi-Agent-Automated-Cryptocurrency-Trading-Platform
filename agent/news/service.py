@@ -291,6 +291,8 @@ class NewsIntelligenceService:
             "storage_kind": getattr(self.repo, "storage_kind", lambda: "unknown")(),
             "storage_available": storage_ok,
             "storage_error": None if storage_ok else (self.storage_error or "storage_unavailable"),
+            "revision_archive_status": getattr(self.repo, "revision_archive_status", "not_wired"),
+            "historical_provenance": "incomplete",
             "latest_ingestion": latest,
             "note": (
                 "69A.1 — advisory news on Supabase PostgreSQL only. "

@@ -24,6 +24,7 @@ from apps.api.app.database_url import (  # noqa: E402
     APP_SCHEMA,
     DatabaseUrlError,
     inspect_database_url,
+    redact_connection_strings,
 )
 from apps.api.app.models import Base  # noqa: E402
 from scripts.verify_dev_database_target import (  # noqa: E402

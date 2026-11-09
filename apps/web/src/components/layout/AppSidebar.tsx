@@ -27,7 +27,7 @@ import { NAV_GROUPS } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 function isActive(pathname: string, href: string) {
-  if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/orchestrator") return pathname === "/orchestrator" || pathname === "/dashboard";
   if (href === "/agents") return pathname === "/agents";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -115,12 +115,12 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip="CryptoNova">
-              <Link href="/dashboard" aria-label="CryptoNova dashboard">
+              <Link href="/orchestrator" aria-label="CryptoNova Orchestrator">
                 <CryptoNovaMark priority className="h-8 w-8 shrink-0" />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="font-display truncate text-base tracking-tight">CryptoNova</span>
-                  <span className="truncate text-[10px] uppercase tracking-[0.14em] text-amber-200/70">
-                    Workspace
+                  <span className="truncate text-[10px] uppercase tracking-[0.14em] text-brand">
+                    Command Center
                   </span>
                 </div>
               </Link>
@@ -155,10 +155,15 @@ export function AppSidebar() {
 
       <SidebarFooter>
         <Separator className="mb-2 bg-sidebar-border" />
-        <div className="group-data-[collapsible=icon]:hidden rounded-xl border border-white/10 bg-white/5 p-3">
-          <Badge variant="sample">SAMPLE-safe</Badge>
+        <div className="group-data-[collapsible=icon]:hidden rounded-xl border border-border bg-muted/40 p-3">
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="sample">SAMPLE-safe</Badge>
+            <Badge variant="outline" className="rounded-full text-[10px]">
+              Trading off
+            </Badge>
+          </div>
           <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-            Live orders stay off. Explore paper &amp; public markets freely.
+            Orchestrator is paper-only. Live exchange orders stay locked.
           </p>
         </div>
       </SidebarFooter>

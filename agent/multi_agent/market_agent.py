@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agent.candle_time import default_staleness_ms
+from agent.candle_time import candle_close_ms, default_staleness_ms
 from agent.confirmed_candles import CandleFilterReject, filter_confirmed_candles
 from agent.market_data import Candle
 from agent.multi_agent.types import AgentContribution, MarketCategoryKind, MarketSnapshot
@@ -76,13 +76,16 @@ def _build_market_snapshot(
         )
         return snap, contrib
 
-    filtered = filter_confirmed_candles(
-        candles,
-        interval,
-        now_ms=now_ms,
-        min_bars=1,
-        max_staleness_ms=max_staleness_ms,
-    )
+    try:
+        filtered = filter_confirmed_candles(
+            candles,
+            interval,
+            now_ms=now_ms,
+            min_bars=1,
+            max_staleness_ms=max_staleness_ms,
+        )
+    except (TypeError, ValueError, OverflowError):
+        filtered = CandleFilterReject(reason="malformed candle values")
     if isinstance(filtered, CandleFilterReject):
         snap = MarketSnapshot(
             symbol=symbol.upper(),
@@ -111,6 +114,14 @@ def _build_market_snapshot(
 
     bars = filtered.candles
     reasons: list[str] = []
+    gap_count = sum(
+        current.start != candle_close_ms(previous.start, filtered.interval)
+        for previous, current in zip(bars, bars[1:])
+    )
+    if gap_count:
+        reasons.append("CANDLE_SEQUENCE_GAP")
+    if any(min(c.open, c.high, c.low, c.close) <= 0 for c in bars):
+        reasons.append("NON_POSITIVE_PRICE")
     if len(bars) < min_bars:
         reasons.append("INSUFFICIENT_BARS")
 
@@ -161,6 +172,7 @@ def _build_market_snapshot(
             "age_ms": age,
             "skipped_forming": filtered.skipped_forming,
             "category": cat,
+            "gap_count": gap_count,
         },
     )
     return snap, contrib

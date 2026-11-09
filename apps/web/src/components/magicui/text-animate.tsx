@@ -13,7 +13,7 @@ export function GradientHeading({
   return (
     <Tag
       className={cn(
-        "bg-gradient-to-b from-white from-30% to-white/40 bg-clip-text font-medium tracking-tight text-transparent",
+        "bg-gradient-to-b from-white from-30% to-muted bg-clip-text font-medium tracking-tight text-transparent",
         className,
       )}
     >

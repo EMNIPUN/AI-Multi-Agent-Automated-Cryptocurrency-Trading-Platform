@@ -7,22 +7,29 @@ import json
 from dataclasses import asdict, dataclass
 
 
-# Phase 4B: directional scoring separated from market-quality gate.
-STRATEGY_VERSION = "4B.1.0"
+# Advanced multi-agent: trend/momentum/volume/structure + offline calibration.
+STRATEGY_VERSION = "6.0.0"
 
 
 @dataclass(frozen=True)
 class SignalAgentWeights:
-    """Weights apply only to directional agents (trend + momentum)."""
+    """Weights apply to directional agents (trend, momentum, volume, structure)."""
 
-    trend: float = 0.56
-    momentum: float = 0.44
+    trend: float = 0.40
+    momentum: float = 0.30
+    volume: float = 0.15
+    structure: float = 0.15
 
     def normalized(self) -> SignalAgentWeights:
-        total = self.trend + self.momentum
+        total = self.trend + self.momentum + self.volume + self.structure
         if total <= 0:
-            return SignalAgentWeights(0.56, 0.44)
-        return SignalAgentWeights(trend=self.trend / total, momentum=self.momentum / total)
+            return SignalAgentWeights(0.40, 0.30, 0.15, 0.15)
+        return SignalAgentWeights(
+            trend=self.trend / total,
+            momentum=self.momentum / total,
+            volume=self.volume / total,
+            structure=self.structure / total,
+        )
 
 
 @dataclass(frozen=True)
@@ -43,6 +50,25 @@ class PaperRiskConfig:
 
 
 @dataclass(frozen=True)
+class RegimeConfig:
+    """Conservative confirmation gates, not fitted accuracy estimates."""
+
+    enabled: bool = True
+    lookback: int = 20
+    range_efficiency: float = 0.15
+    trend_efficiency: float = 0.35
+    minimum_supporting_agents: int = 2
+
+    def __post_init__(self) -> None:
+        if self.lookback < 2:
+            raise ValueError("Regime lookback must be at least 2")
+        if not 0 <= self.range_efficiency < self.trend_efficiency <= 1:
+            raise ValueError("Regime efficiency thresholds must be ordered within 0..1")
+        if self.minimum_supporting_agents not in {1, 2, 3}:
+            raise ValueError("Regime consensus requires between 1 and 3 supporting agents")
+
+
+@dataclass(frozen=True)
 class SignalPipelineConfig:
     weights: SignalAgentWeights = SignalAgentWeights()
     risk: PaperRiskConfig = PaperRiskConfig()
@@ -52,6 +78,10 @@ class SignalPipelineConfig:
     sell_threshold: float = -0.35
     # Market quality is a gate, not a directional additive term.
     min_market_quality: float = 1.0
+    regime: RegimeConfig = RegimeConfig()
+    # Optional offline calibration profile id/hash (see calibration.py).
+    calibration_profile_id: str | None = None
+    calibration_hash: str | None = None
 
 
 def config_hash(config: SignalPipelineConfig) -> str:
@@ -63,6 +93,9 @@ def config_hash(config: SignalPipelineConfig) -> str:
         "min_market_quality": config.min_market_quality,
         "min_confirmed_bars": config.min_confirmed_bars,
         "risk": asdict(config.risk),
+        "regime": asdict(config.regime),
+        "calibration_profile_id": config.calibration_profile_id,
+        "calibration_hash": config.calibration_hash,
     }
     raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]

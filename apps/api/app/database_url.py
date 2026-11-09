@@ -7,6 +7,7 @@ Use redact_database_url() for any operator-facing message.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from urllib.parse import parse_qsl, quote, unquote, urlencode, urlparse, urlunparse
 
@@ -32,6 +33,21 @@ class DatabaseUrlInfo:
     pooler_hint: str  # "session_pooler" | "transaction_pooler" | "direct" | "unknown"
     sslmode: str | None
     redacted_url: str
+
+
+_CONNECTION_STRING = re.compile(r"postgres(?:ql)?(?:\+\w+)?://[^\s\"'`<>]+", re.IGNORECASE)
+
+
+def redact_connection_strings(value: str) -> str:
+    """Replace any Postgres URL embedded in an error or log line."""
+
+    def _one(match: re.Match[str]) -> str:
+        try:
+            return redact_database_url(match.group(0))
+        except Exception:  # noqa: BLE001 — never return the original URL
+            return "postgresql://***"
+
+    return _CONNECTION_STRING.sub(_one, value)
 
 
 def redact_database_url(url: str) -> str:

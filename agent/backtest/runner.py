@@ -121,19 +121,47 @@ def _load_candles(config: BacktestConfig, candles: list[Candle] | None) -> tuple
     raise ValueError(f"unsupported data_source={config.data_source}")
 
 
+def _export_postgres_journal(pg_journal: object, result: BacktestResult) -> None:
+    """Copy one finished SQLite run. Failure must not look like completion."""
+    from agent.backtest.journal_export import export_sqlite_backtest
+    from apps.api.app.persistence.owner import resolve_sot_owner_user_id
+
+    try:
+        export_sqlite_backtest(
+            pg_journal,  # type: ignore[arg-type]
+            result,
+            owner_user_id=str(resolve_sot_owner_user_id(required=True)),
+        )
+    except Exception as exc:
+        text = str(exc)
+        if "://" in text or "password" in text.lower():
+            raise RuntimeError("backtest_postgres_export_failed") from None
+        raise
+
+
 def run_backtest(
     config: BacktestConfig | None = None,
     *,
     candles: list[Candle] | None = None,
     journal_dir: str | Path | None = None,
     journal_path: str | Path | None = None,
+    journal_mode: str = "sqlite",
+    pg_journal: object | None = None,
 ) -> BacktestResult:
     """
     Replay confirmed historical candles through SignalPipeline + isolated PaperBroker.
 
     Does not flip PAPER_* / AGENT_ALLOW_LIVE globals.
-    Does not write to the operator paper journal or remote SoT.
+    Does not write to the operator paper journal.
+    ``journal_mode=sqlite`` is the default. ``postgres`` requires an explicit
+    journal object, keeps the isolated SQLite calculation, then exports that
+    run. A missing journal fails before any file is created. An export failure
+    is returned as a failed run and is not reported as completion.
     """
+    if journal_mode not in {"sqlite", "postgres"}:
+        raise RuntimeError("backtest_journal_mode_invalid")
+    if journal_mode == "postgres" and pg_journal is None:
+        raise RuntimeError("backtest_postgres_runtime_not_enabled")
     cfg = config or BacktestConfig()
     created_ms = int(time.time() * 1000)
     run_id = f"bt_{uuid.uuid4().hex[:16]}"
@@ -347,7 +375,7 @@ def run_backtest(
                 }
             },
         )
-        return BacktestResult(
+        completed = BacktestResult(
             run_id=draft.run_id,
             status=draft.status,
             performance_label=draft.performance_label,
@@ -370,6 +398,9 @@ def run_backtest(
             created_ms=draft.created_ms,
             extras=draft.extras,
         )
+        if journal_mode == "postgres":
+            _export_postgres_journal(pg_journal, completed)
+        return completed
     except Exception as exc:  # noqa: BLE001 — surface as failed run
         return BacktestResult(
             run_id=run_id,

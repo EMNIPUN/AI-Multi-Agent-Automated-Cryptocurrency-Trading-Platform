@@ -80,9 +80,9 @@ export function AgentStudioHeader({
   return (
     <motion.header
       layout={!reduce}
-      className="relative mb-5 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-5 shadow-[var(--panel-shadow)] md:p-6"
+      className="relative mb-5 overflow-hidden rounded-3xl border border-border bg-muted/40 p-5 shadow-[var(--panel-shadow)] md:p-6"
     >
-      <BorderBeam size={260} duration={14} colorFrom="#f59e0b" colorTo="#ffffff" />
+      <BorderBeam size={260} duration={14} colorFrom="#F7A600" colorTo="#FFCE6E" />
 
       <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
@@ -91,7 +91,7 @@ export function AgentStudioHeader({
               <Sparkles className="h-3 w-3" />
                 Live AI Analysis
             </span>
-            <Badge variant="outline" className="rounded-full border-white/15 text-white/70">
+            <Badge variant="outline" className="rounded-full border-border text-foreground">
               {projection.executionMode.replace(/_/g, " ")}
             </Badge>
             {projection.dataMode === "fixture" ? (
@@ -103,7 +103,7 @@ export function AgentStudioHeader({
           <h1 className="text-metallic text-2xl font-medium tracking-tight md:text-3xl">
             {copy.title}
           </h1>
-          <p className="mt-1 max-w-xl text-sm text-white/55">{copy.body}</p>
+          <p className="mt-1 max-w-xl text-sm text-foreground">{copy.body}</p>
           {projection.analyzing || projection.agentStatus === "RUNNING" ? (
             <Shimmer className="mt-2 text-xs">
               {projection.analyzing
@@ -111,12 +111,12 @@ export function AgentStudioHeader({
                 : "Watching markets & streaming evidence…"}
             </Shimmer>
           ) : projection.heartbeatStale || projection.dataMode === "unavailable" ? (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-amber-200/90">
+            <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-orange-300/90">
               <AlertTriangle className="h-3.5 w-3.5" />
               Evidence may be incomplete · last beat {age}
             </p>
           ) : (
-            <p className="mt-2 text-xs text-white/40">Heartbeat {age}</p>
+            <p className="mt-2 text-xs text-foreground">Heartbeat {age}</p>
           )}
         </div>
 
@@ -128,8 +128,8 @@ export function AgentStudioHeader({
             label="health"
             className="size-24"
           />
-          <div className="hidden text-sm text-white/50 sm:block">
-            <p className="font-medium text-white/80">{projection.symbol}</p>
+          <div className="hidden text-sm text-foreground sm:block">
+            <p className="font-medium text-foreground">{projection.symbol}</p>
             <p>{projection.interval}m timeframe</p>
             <p className="capitalize">{projection.evidenceFreshness} evidence</p>
           </div>
@@ -150,10 +150,10 @@ export function AgentStudioHeader({
           </TabsList>
         </Tabs>
 
-        <Separator orientation="vertical" className="hidden h-8 bg-white/15 sm:block" />
+        <Separator orientation="vertical" className="hidden h-8 bg-muted/40 sm:block" />
 
         <Select value={explainMode} onValueChange={(v) => onExplainMode(v as ExplainMode)}>
-          <SelectTrigger className="w-[150px] rounded-full border-white/15" aria-label="Detail level">
+          <SelectTrigger className="w-[150px] rounded-full border-border" aria-label="Detail level">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -164,13 +164,13 @@ export function AgentStudioHeader({
 
         <Link
           href="/paper"
-          className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/70 transition hover:border-amber-400/40 hover:text-amber-100"
+          className="rounded-full border border-border px-3 py-1.5 text-xs text-foreground transition hover:border-orange-400/40 hover:text-orange-100"
         >
           Paper journal (read-only)
         </Link>
         <Link
           href="/backtesting"
-          className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/70 transition hover:border-amber-400/40 hover:text-amber-100"
+          className="rounded-full border border-border px-3 py-1.5 text-xs text-foreground transition hover:border-orange-400/40 hover:text-orange-100"
         >
           Backtesting
         </Link>

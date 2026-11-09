@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
               {error}
             </p>
           ) : null}
-          <Button type="submit" variant="cyan" className="w-full" disabled={busy || !configured}>
+          <Button type="submit" variant="brand" className="w-full" disabled={busy || !configured}>
             {busy ? "Sending…" : "Send recovery link"}
           </Button>
         </form>

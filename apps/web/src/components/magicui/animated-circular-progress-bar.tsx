@@ -94,7 +94,7 @@ export function AnimatedCircularProgressBar({
       </svg>
       <span className="absolute inset-0 m-auto flex size-fit flex-col items-center justify-center">
         <span className="text-lg leading-none">{currentPercent}</span>
-        {label ? <span className="mt-1 text-[10px] font-normal text-white/50">{label}</span> : null}
+        {label ? <span className="mt-1 text-[10px] font-normal text-foreground">{label}</span> : null}
       </span>
     </div>
   );

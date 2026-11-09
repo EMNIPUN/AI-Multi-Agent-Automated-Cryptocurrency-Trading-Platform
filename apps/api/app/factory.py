@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from apps.api import __version__
 from apps.api.app.config import ApiSettings, get_api_settings
-from apps.api.app.database_url import DatabaseUrlError
+from apps.api.app.database_url import DatabaseUrlError, redact_connection_strings
 from apps.api.app.deps import get_current_principal
 from apps.api.app.errors import AppError, app_error_handler
 from apps.api.app.exchange.binding_api import router as exchange_bindings_router
@@ -26,6 +26,7 @@ from apps.api.app.backtests.router import router as backtests_router
 from apps.api.app.backtests.run_router import router as backtests_run_router
 from apps.api.app.news.router import router as news_router
 from apps.api.app.llm.router import router as llm_router
+from apps.api.app.orchestrator.router import router as orchestrator_router
 from apps.api.app.routers import catalog, health, me, system
 
 
@@ -71,9 +72,16 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
         )
 
         maybe_start_news_scheduler(settings)
+        from apps.api.app.orchestrator.runtime import (
+            maybe_start_paper_supervisor_worker,
+            shutdown_paper_supervisor_worker,
+        )
+
+        maybe_start_paper_supervisor_worker()
         try:
             yield
         finally:
+            shutdown_paper_supervisor_worker()
             shutdown_news_scheduler()
             shutdown_auto_engine()
             from apps.api.app.market_data.stream_hub import get_market_stream_hub
@@ -129,6 +137,7 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     app.include_router(backtests_run_router)
     app.include_router(news_router)
     app.include_router(llm_router)
+    app.include_router(orchestrator_router)
     app.state.bybit_wallet_client = None
     app.state.bybit_public_rest = None
     app.state.bybit_public_ws = None

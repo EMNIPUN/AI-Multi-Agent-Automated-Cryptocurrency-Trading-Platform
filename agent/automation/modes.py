@@ -15,7 +15,7 @@ class TradingMode(str, Enum):
     SIGNALS_ONLY = "SIGNALS_ONLY"
     PAPER_TRADING = "PAPER_TRADING"
     TESTNET_TRADING = "TESTNET_TRADING"
-    MAINNET_TRADING = "MAINNET_TRADING"  # locked — never activated in 6A
+    MAINNET_TRADING = "MAINNET_TRADING"  # operator-armed; chat Approve per order
 
 
 class MarketSegment(str, Enum):
@@ -48,7 +48,7 @@ class AutomationGates:
     testnet_operator_approved: bool
     testnet_order_submission_approved: bool
     perpetual_auto_execution_enabled: bool
-    mainnet_trading_enabled: bool  # must stay false
+    mainnet_trading_enabled: bool
     bybit_testnet_env: bool
     bybit_demo_env: bool
 
@@ -82,7 +82,12 @@ class AutomationGates:
 
     @property
     def mainnet_execution_path_exists(self) -> bool:
-        return False  # hard lock for Phase 6A
+        return (
+            self.mainnet_trading_enabled
+            and _flag("AGENT_ALLOW_LIVE")
+            and not self.bybit_testnet_env
+            and not self.bybit_demo_env
+        )
 
 
 def get_automation_gates() -> AutomationGates:
@@ -117,9 +122,10 @@ def gates_public_dict() -> dict[str, object]:
         "agent_allow_live_not_used_as_shortcut": True,
         "default_mode": TradingMode.SIGNALS_ONLY.value,
         "note": (
-            "Phase 6A foundation — SIGNALS_ONLY by default. "
-            "No Testnet orders until dual Testnet gates + TESTNET_ORDER_SUBMISSION_APPROVED. "
-            "MAINNET_TRADING has no execution path."
+            "SIGNALS_ONLY by default. "
+            "Testnet needs dual Testnet gates + TESTNET_ORDER_SUBMISSION_APPROVED. "
+            "MAINNET needs AGENT_ALLOW_LIVE + MAINNET_TRADING_ENABLED; "
+            "Orchestrator requires chat Approve per live order."
         ),
     }
 

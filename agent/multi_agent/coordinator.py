@@ -19,8 +19,8 @@ from agent.multi_agent.types import (
 
 SIGNAL_STRENGTH_NOTE = (
     "signal_strength = |directional_conviction| × market_quality (0..1). "
-    "It is a qualitative agreement score — not a calibrated win probability, "
-    "PnL forecast, or backtested edge."
+    "When a CalibrationProfile is loaded, thresholds/weights are offline-fitted "
+    "historical agreement — still not a guaranteed win probability or PnL forecast."
 )
 
 
@@ -48,13 +48,20 @@ def directional_conviction(
     trend: AgentContribution,
     momentum: AgentContribution,
     config: SignalPipelineConfig,
+    volume: AgentContribution | None = None,
+    structure: AgentContribution | None = None,
 ) -> float:
-    """Symmetric directional score in [-1, 1] from trend+momentum only."""
+    """Symmetric directional score in [-1, 1] from trend/momentum/volume/structure."""
     weights = config.weights.normalized()
-    return (
+    score = (
         _signed_directional(trend.bias, trend.confidence) * weights.trend
         + _signed_directional(momentum.bias, momentum.confidence) * weights.momentum
     )
+    if volume is not None:
+        score += _signed_directional(volume.bias, volume.confidence) * weights.volume
+    if structure is not None:
+        score += _signed_directional(structure.bias, structure.confidence) * weights.structure
+    return max(-1.0, min(1.0, score))
 
 
 def infer_source_mode(data_path: str) -> str:
@@ -119,17 +126,21 @@ def coordinate(
     risk_fn,
     risk_state,
     news_advisory: dict | None = None,
+    regime: AgentContribution | None = None,
+    volume: AgentContribution | None = None,
+    structure: AgentContribution | None = None,
 ) -> CoordinatorDecision:
     """
     Explicit order already applied by caller:
-    Market → Trend → Momentum → (propose) → Risk → finalize.
+    Market → Trend/Momentum/Volume/Structure → (propose) → Risk → finalize.
 
-    Scoring (4B.1.0):
-    - directional_conviction ∈ [-1, 1] from trend + momentum only (symmetric)
+    Scoring (6.0.0):
+    - directional_conviction ∈ [-1, 1] from trend + momentum + volume + structure
     - market_quality ∈ [0, 1] is a gate, never added as bullish bias
+    - regime remains a confirmation/abstention gate (not a directional weight)
     - risk eligibility is independent (Risk Agent)
     """
-    conviction = directional_conviction(trend, momentum, config)
+    conviction = directional_conviction(trend, momentum, config, volume=volume, structure=structure)
     quality = market_quality_score(market_contrib, snapshot)
     source_mode = infer_source_mode(snapshot.data_path)
     cfg_hash = config_hash(config)
@@ -155,7 +166,7 @@ def coordinate(
         reason = ("COORD_HOLD",)
         explanation = f"Directional conviction {conviction:.3f} in neutral band"
 
-    # Conflicting agents → prefer HOLD before risk
+    # Conflicting core agents → prefer HOLD before risk
     if (
         trend.bias == TrendBias.BULLISH.value
         and momentum.bias == MomentumBias.BEARISH.value
@@ -168,6 +179,42 @@ def coordinate(
         proposed = DecisionAction.HOLD
         reason = ("AGENT_CONFLICT",)
         explanation = "HOLD: trend/momentum conflict"
+
+    # Regime is a confirmation/abstention agent, never an extra directional
+    # weight. Volume/structure participate in conviction + consensus counts.
+    scored = (trend, momentum)
+    if volume is not None:
+        scored = (*scored, volume)
+    if structure is not None:
+        scored = (*scored, structure)
+    directional_agents = scored + ((regime,) if regime is not None else ())
+    desired_bias = "BULLISH" if conviction > 0 else "BEARISH" if conviction < 0 else "NEUTRAL"
+    opposite_bias = "BEARISH" if desired_bias == "BULLISH" else "BULLISH" if desired_bias == "BEARISH" else ""
+    supporting = [c.agent_id for c in directional_agents if c.bias == desired_bias and desired_bias != "NEUTRAL"]
+    opposing = [c.agent_id for c in directional_agents if c.bias == opposite_bias]
+    neutral = [c.agent_id for c in directional_agents if c.bias not in {"BULLISH", "BEARISH"}]
+    regime_name = regime.indicators.get("regime", "UNAVAILABLE") if regime else "UNAVAILABLE"
+    before_regime = proposed.value
+    if config.regime.enabled and proposed in {DecisionAction.BUY, DecisionAction.SELL}:
+        if regime is None or regime.bias == "INSUFFICIENT_DATA" or regime.error or regime.timed_out:
+            proposed = DecisionAction.HOLD
+            reason = ("REGIME_UNAVAILABLE",)
+            explanation = "HOLD: regime confirmation unavailable"
+        elif regime.indicators.get("structure") == "RANGING":
+            proposed = DecisionAction.HOLD
+            reason = ("RANGING_MARKET_ABSTENTION",)
+            explanation = "HOLD: trend strategy abstains in a ranging market"
+        elif opposing:
+            proposed = DecisionAction.HOLD
+            reason = ("AGENT_CONFLICT",)
+            explanation = "HOLD: directional agents disagree (" + ", ".join(opposing) + ")"
+        elif len(supporting) < config.regime.minimum_supporting_agents:
+            proposed = DecisionAction.HOLD
+            reason = ("CONSENSUS_INSUFFICIENT",)
+            explanation = (
+                f"HOLD: {len(supporting)} supporting agents; "
+                f"{config.regime.minimum_supporting_agents} required"
+            )
 
     decision_id, correlation_id, idempotent_key = _ids(
         symbol=snapshot.symbol,
@@ -224,7 +271,7 @@ def coordinate(
         decision_id=decision_id,
         signal_strength=strength,
         signal_strength_note=SIGNAL_STRENGTH_NOTE,
-        contributions=(market_contrib, trend, momentum),
+        contributions=(market_contrib, *directional_agents),
         risk=risk,
         reason_codes=tuple(final_reasons),
         explanation=explanation,
@@ -238,4 +285,27 @@ def coordinate(
         execution_allowed=False,
         news_advisory=news_advisory,
         news_changed_decision=False,
+        decision_context={
+            "market_regime": regime_name,
+            "regime_filter_enabled": config.regime.enabled,
+            "proposal_before_regime": before_regime,
+            "calibration_profile_id": config.calibration_profile_id,
+            "calibration_hash": config.calibration_hash,
+            "consensus": {
+                "direction": desired_bias,
+                "supporting_agents": supporting,
+                "opposing_agents": opposing,
+                "neutral_agents": neutral,
+                "minimum_support": config.regime.minimum_supporting_agents,
+                "agreement_ratio": (
+                    len(supporting) / len(directional_agents) if directional_agents else 0.0
+                ),
+                "score_kind": (
+                    "calibrated_historical_agreement"
+                    if config.calibration_profile_id
+                    else "heuristic_not_probability"
+                ),
+            },
+            "abstention_reason": final_reasons[0] if final in {DecisionAction.HOLD, DecisionAction.BLOCKED} else None,
+        },
     )

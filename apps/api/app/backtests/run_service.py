@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import threading
 import time
 import uuid
@@ -56,6 +57,33 @@ class RunServiceError(Exception):
         self.code = code
         self.message = message
         self.http_status = http_status
+
+
+def _optional_postgres_journal():
+    """Opt-in development journal. Unset stays on isolated SQLite."""
+    mode = os.getenv("CRYPTONOVA_BACKTEST_JOURNAL", "sqlite").strip().lower()
+    if mode != "postgres":
+        return "sqlite", None, None
+    from sqlalchemy import create_engine
+    from sqlalchemy.pool import NullPool
+
+    from agent.backtest.pg_journal import PostgresBacktestJournal
+    from apps.api.app.config import get_api_settings
+
+    engine = create_engine(
+        get_api_settings().sqlalchemy_url_legacy(),
+        pool_pre_ping=True,
+        poolclass=NullPool,
+    )
+    journal = PostgresBacktestJournal(engine)
+    if not journal.ready():
+        engine.dispose()
+        raise RunServiceError(
+            "backtest_postgres_journal_unavailable",
+            "PostgreSQL backtest journal is not ready",
+            http_status=503,
+        )
+    return "postgres", journal, engine
 
 
 @dataclass

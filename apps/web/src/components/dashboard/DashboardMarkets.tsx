@@ -38,7 +38,7 @@ export function DashboardMarkets() {
 
   return (
     <div className="relative h-full overflow-hidden rounded-3xl border border-border/70 bg-card/60 p-5 md:p-6">
-      <BorderBeam size={160} duration={11} colorFrom="#22d3ee" colorTo="#38bdf8" />
+      <BorderBeam size={160} duration={11} colorFrom="#F7A600" colorTo="#FFCE6E" />
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-xl tracking-tight">Live markets</h2>
@@ -65,7 +65,7 @@ export function DashboardMarkets() {
             return (
               <div
                 key={sym}
-                className="rounded-2xl border border-border/60 bg-background/50 p-4 transition-colors hover:border-white/15"
+                className="rounded-2xl border border-border/60 bg-background/50 p-4 transition-colors hover:border-border"
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-medium text-muted-foreground">

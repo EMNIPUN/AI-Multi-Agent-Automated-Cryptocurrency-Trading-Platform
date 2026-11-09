@@ -46,12 +46,12 @@ function MetricTile({
   return (
     <div
       className={cn(
-        "min-w-0 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5",
+        "min-w-0 rounded-xl border border-border bg-muted/40 px-3 py-2.5",
         className,
       )}
     >
       <p className="text-[11px] text-muted-foreground">{label}</p>
-      <div className="mt-1 min-w-0 break-words font-mono text-xs text-white/90">{children}</div>
+      <div className="mt-1 min-w-0 break-words font-mono text-xs text-foreground">{children}</div>
     </div>
   );
 }
@@ -367,12 +367,12 @@ export function SignalsPanel({
           </div>
 
           {audit.length > 0 ? (
-            <div className="rounded-xl border border-white/10 bg-black/25">
+            <div className="rounded-xl border border-border bg-muted/50">
               <div className="flex items-center justify-between gap-2 px-3 py-2">
-                <p className="text-xs font-medium text-white/80">Engine audit</p>
+                <p className="text-xs font-medium text-foreground">Engine audit</p>
                 <span className="text-[11px] text-muted-foreground">{audit.length} events</span>
               </div>
-              <Separator className="bg-white/10" />
+              <Separator className="bg-muted/40" />
               <ScrollArea className="h-28">
                 <div className="space-y-1 px-3 py-2 font-mono text-[11px] text-muted-foreground">
                   {audit.map((a, i) => (
@@ -446,7 +446,7 @@ export function SignalsPanel({
                 </div>
               </div>
 
-              <p className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs">
+              <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
                 {decision.news_advisory?.label ||
                   decision.news_influence_label ||
                   "News Advisory Only — Trading Decisions Unchanged"}
@@ -526,7 +526,7 @@ export function SignalsPanel({
             </div>
           ) : null}
 
-          <ScrollArea className="h-72 rounded-xl border border-white/10 bg-black/20">
+          <ScrollArea className="h-72 rounded-xl border border-border bg-muted/40">
             <div className="space-y-1 p-2">
               {history.length === 0 ? (
                 <p className="px-2 py-8 text-center text-muted-foreground">

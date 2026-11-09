@@ -25,75 +25,69 @@ export function LandingNav() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 border-b transition-colors",
-        scrolled ? "border-white/10 bg-black/70 backdrop-blur-xl" : "border-transparent bg-transparent",
+        "sticky top-0 z-50 transition-colors",
+        scrolled
+          ? "border-b border-border bg-background/85 backdrop-blur-xl"
+          : "bg-transparent",
       )}
     >
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 md:px-6">
-        <Link href="/" className="flex items-center gap-2" aria-label="CryptoNova home">
-          <CryptoNovaMark className="h-8 w-8" priority />
-          <span className="text-sm font-medium tracking-tight text-white/90">CryptoNova</span>
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 md:h-16 md:px-6">
+        <Link href="/" className="flex items-center gap-2.5" aria-label="CryptoNova home">
+          <CryptoNovaMark className="h-7 w-7" priority />
+          <span className="text-[15px] font-semibold tracking-tight text-foreground">
+            CryptoNova
+          </span>
         </Link>
-
-        <nav className="hidden items-center gap-6 md:flex" aria-label="Main">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-sm text-white/55 transition-colors hover:text-white"
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
 
         <div className="flex items-center gap-2">
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="text-white/70"
+            className="h-9 w-9 rounded-full"
             aria-label={light ? "Use dark theme" : "Use light theme"}
             onClick={() => setLight((v) => !v)}
           >
             {light ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </Button>
-          <Button asChild variant="ghost" className="hidden text-white/70 sm:inline-flex">
-            <Link href="/login">Log in</Link>
-          </Button>
-          <Button asChild variant="secondary" className="hidden rounded-md sm:inline-flex">
-            <Link href="/signup">Sign up</Link>
-          </Button>
           <Button
             variant="outline"
             size="icon"
-            className="md:hidden"
+            className="h-9 w-9 rounded-full"
             aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
           >
             {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </Button>
+          <Button asChild className="rounded-full px-4">
+            <Link href="/signup">Try for Free</Link>
           </Button>
         </div>
       </div>
 
       {open ? (
-        <div className="border-t border-white/10 bg-black/95 px-4 py-4 md:hidden">
-          <nav className="flex flex-col gap-3" aria-label="Mobile">
+        <div className="border-t border-border bg-background/95 px-4 py-5 backdrop-blur-xl">
+          <nav className="mx-auto flex max-w-6xl flex-col gap-4" aria-label="Site">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="text-sm text-white/70"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                 onClick={() => setOpen(false)}
               >
                 {link.label}
               </a>
             ))}
-            <Link href="/login" className="text-sm" onClick={() => setOpen(false)}>
+            <Link
+              href="/login"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => setOpen(false)}
+            >
               Log in
             </Link>
-            <Button asChild>
+            <Button asChild className="mt-1 w-full rounded-full sm:hidden">
               <Link href="/signup" onClick={() => setOpen(false)}>
-                Sign up
+                Try for Free
               </Link>
             </Button>
           </nav>

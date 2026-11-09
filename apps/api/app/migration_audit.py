@@ -122,10 +122,17 @@ def audit_initial_migration() -> MigrationAuditResult:
         issues.append(
             f"catalog model tables missing: {sorted(expected_catalog - model_tables)}"
         )
-    allowed_later = {_EXCHANGE_BINDING_TABLE} | _PHASE4D_SIGNAL_TABLES
-    unexpected = model_tables - expected_catalog - allowed_later
+    # Later milestones add tables. A model is expected when some revision creates it.
+    created = set(
+        re.findall(r"create_table\(\s*[\"']([A-Za-z0-9_]+)[\"']", all_text)
+    )
+    unexpected = {
+        key
+        for key in model_tables
+        if key.split(".", 1)[-1] not in created
+    }
     if unexpected:
-        issues.append(f"unexpected model tables: {sorted(unexpected)}")
+        issues.append(f"model tables missing from migrations: {sorted(unexpected)}")
 
     for key in expected_catalog:
         short = key.split(".", 1)[1]

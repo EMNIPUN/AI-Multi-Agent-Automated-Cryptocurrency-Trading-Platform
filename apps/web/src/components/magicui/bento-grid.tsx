@@ -59,7 +59,7 @@ export function BentoCard({
         </div>
 
         <div className="pointer-events-none mt-4 flex w-full translate-y-0 transform-gpu flex-row items-center lg:hidden">
-          <Button variant="ghost" asChild size="sm" className="pointer-events-auto p-0 text-white">
+          <Button variant="ghost" asChild size="sm" className="pointer-events-auto p-0 text-foreground">
             <Link href={href}>
               {cta}
               <ArrowRight className="ms-2 h-4 w-4" />
@@ -73,7 +73,7 @@ export function BentoCard({
           "pointer-events-none absolute bottom-0 hidden w-full translate-y-10 transform-gpu flex-row items-center p-5 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:flex",
         )}
       >
-        <Button variant="ghost" asChild size="sm" className="pointer-events-auto p-0 text-white">
+        <Button variant="ghost" asChild size="sm" className="pointer-events-auto p-0 text-foreground">
           <Link href={href}>
             {cta}
             <ArrowRight className="ms-2 h-4 w-4" />

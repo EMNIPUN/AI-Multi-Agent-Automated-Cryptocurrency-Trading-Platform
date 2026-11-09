@@ -14,7 +14,7 @@ import {
 
 export function LandingPage() {
   return (
-    <div className="relative min-h-screen bg-black text-white">
+    <div className="relative min-h-screen bg-background text-foreground">
       <LandingNav />
       <LandingHero />
       <LogoCloud />

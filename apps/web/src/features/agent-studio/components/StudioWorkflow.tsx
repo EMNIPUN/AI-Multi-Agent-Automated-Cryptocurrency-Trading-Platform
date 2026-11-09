@@ -186,7 +186,7 @@ function SubagentRow({
             />
           ))}
         </Trace>
-        {report ? <p className="text-sm text-white/70">{report}</p> : null}
+        {report ? <p className="text-sm text-foreground">{report}</p> : null}
       </TraceCollapsibleContent>
     </TraceCollapsible>
   );
@@ -208,17 +208,17 @@ export function StudioWorkflow({
   const streaming = stages.some((s) => s.state === "ACTIVE" || s.state === "WAITING");
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#080D19] p-5 md:p-6">
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 md:p-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,hsl(var(--primary)/0.08),transparent_40%)]" />
       <div className="relative z-10 mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-amber-200/80">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-orange-300/80">
             Subagent trace
           </p>
-          <h2 className="mt-1 text-lg font-medium tracking-tight text-white">
+          <h2 className="mt-1 text-lg font-medium tracking-tight text-foreground">
             Trading workflow run
           </h2>
-          <p className="mt-1 text-sm text-white/50">
+          <p className="mt-1 text-sm text-foreground">
             Expand the subagent for each stage — same shape as the research-agent demo.
           </p>
         </div>
@@ -232,7 +232,7 @@ export function StudioWorkflow({
 
       <div
         key={replayKey}
-        className="relative z-10 flex min-h-72 w-full flex-col gap-4 rounded-2xl border border-white/10 bg-black/40 p-4 text-sm"
+        className="relative z-10 flex min-h-72 w-full flex-col gap-4 rounded-2xl border border-border bg-muted/70 p-4 text-sm"
       >
         {streaming ? (
           <Shimmer className="text-xs">Generating response…</Shimmer>
@@ -255,8 +255,8 @@ export function StudioWorkflow({
               className={cn(
                 "rounded-full border px-2.5 py-1 text-[10px] transition-colors",
                 selectedId === stage.id
-                  ? "border-white bg-white text-black"
-                  : "border-white/15 text-white/55 hover:border-white/30 hover:text-white",
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border text-foreground hover:border-border hover:text-foreground",
               )}
               onClick={() => onSelect(stage.id)}
             >

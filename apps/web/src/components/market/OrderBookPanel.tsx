@@ -38,7 +38,7 @@ export function OrderBookPanel({ book }: { book: OrderBookView | null }) {
   return (
     <div className="space-y-2">
       <div className="flex h-5 items-center justify-between gap-2">
-        <span className="text-[10px] uppercase tracking-wide text-white/40">Price · Size</span>
+        <span className="text-[10px] uppercase tracking-wide text-foreground">Price · Size</span>
         {!book ? (
           <Badge variant="warning" className="rounded-full">
             Waiting
@@ -48,7 +48,7 @@ export function OrderBookPanel({ book }: { book: OrderBookView | null }) {
             Stale
           </Badge>
         ) : (
-          <Badge variant="outline" className="rounded-full border-white/15">
+          <Badge variant="outline" className="rounded-full border-border">
             Synced
           </Badge>
         )}
@@ -70,7 +70,7 @@ export function OrderBookPanel({ book }: { book: OrderBookView | null }) {
                 ? a.price.toLocaleString(undefined, { maximumFractionDigits: 4 })
                 : "—"}
             </span>
-            <span className="relative text-right text-white/40 tabular-nums">
+            <span className="relative text-right text-foreground tabular-nums">
               {a.size != null
                 ? a.size.toLocaleString(undefined, { maximumFractionDigits: 4 })
                 : "—"}
@@ -78,17 +78,17 @@ export function OrderBookPanel({ book }: { book: OrderBookView | null }) {
           </div>
         ))}
 
-        <div className="my-1.5 flex h-8 items-center justify-center rounded-xl border border-white/10 bg-black/40 px-2 text-[11px]">
+        <div className="my-1.5 flex h-8 items-center justify-center rounded-xl border border-border bg-muted/70 px-2 text-[11px]">
           {book?.best_bid != null && book?.best_ask != null ? (
-            <span className="text-white/55">
+            <span className="text-foreground">
               Spread{" "}
-              <span className="text-white tabular-nums">
+              <span className="text-foreground tabular-nums">
                 {book.spread?.toPrecision(4)}
                 {book.spread_bps != null ? ` · ${book.spread_bps.toFixed(1)} bps` : ""}
               </span>
             </span>
           ) : (
-            <span className="text-white/40">Spread —</span>
+            <span className="text-foreground">Spread —</span>
           )}
         </div>
 
@@ -106,7 +106,7 @@ export function OrderBookPanel({ book }: { book: OrderBookView | null }) {
                 ? b.price.toLocaleString(undefined, { maximumFractionDigits: 4 })
                 : "—"}
             </span>
-            <span className="relative text-right text-white/40 tabular-nums">
+            <span className="relative text-right text-foreground tabular-nums">
               {b.size != null
                 ? b.size.toLocaleString(undefined, { maximumFractionDigits: 4 })
                 : "—"}

@@ -148,10 +148,16 @@ def test_model_metadata_schema_and_tables() -> None:
 
 
 def test_models_are_not_execution_ledger() -> None:
-    # Guardrail: Phase 2A tables must not claim order/fill authority naming.
+    # Phase 2A catalog rows stay observational. Fills live in the owner-scoped
+    # intent tables added when the execution ledger moved into the ORM.
     names = {t.name for t in Base.metadata.sorted_tables}
-    assert "order_intents" not in names
-    assert "order_executions" not in names
+    assert "order_intents" in names
+    assert "order_executions" in names
+    intent_cols = {c.name for c in Base.metadata.tables["app.order_intents"].columns}
+    assert "owner_user_id" in intent_cols
+    assert "filled_qty" in intent_cols
+    decision_cols = {c.name for c in AgentDecision.__table__.columns}
+    assert "filled_qty" not in decision_cols
     assert AgentDecision.__tablename__ == "agent_decisions"
     assert SystemEvent.__tablename__ == "system_events"
     assert StrategyConfig.__tablename__ == "strategy_configs"

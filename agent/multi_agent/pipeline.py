@@ -16,6 +16,7 @@ from agent.multi_agent.config import SignalPipelineConfig
 from agent.multi_agent.coordinator import coordinate
 from agent.multi_agent.market_agent import build_market_snapshot
 from agent.multi_agent.momentum_agent import evaluate_momentum
+from agent.multi_agent.regime_agent import evaluate_regime
 from agent.multi_agent.risk_agent import (
     SignalRiskState,
     evaluate_signal_risk,
@@ -27,7 +28,9 @@ from agent.multi_agent.signal_history_store import (
     SignalHistoryStore,
     SignalHistoryStoreError,
 )
+from agent.multi_agent.structure_agent import evaluate_structure
 from agent.multi_agent.trend_agent import evaluate_trend
+from agent.multi_agent.volume_agent import evaluate_volume
 from agent.multi_agent.types import (
     AgentContribution,
     CoordinatorDecision,
@@ -63,7 +66,7 @@ def _block_persist_failure(decision: CoordinatorDecision, reason: str) -> Coordi
 
 class SignalPipeline:
     """
-    Explicit order: Market → Trend → Momentum → Coordinator propose → Risk → finalize.
+    Explicit order: Market → Trend/Momentum/Volume/Structure → Coordinator → Risk → finalize.
 
     Fail-closed on timeouts/errors/persistence. Never calls wallet or order endpoints.
     """
@@ -137,63 +140,55 @@ class SignalPipeline:
             news_context=loaded_news,
         )
 
+        def _fail_closed(agent_id: str, *, timed_out: bool = False, error: str | None = None) -> AgentContribution:
+            return AgentContribution(
+                agent_id=agent_id,
+                agent_version="6.0.0",
+                bias="INSUFFICIENT_DATA",
+                confidence=0.0,
+                reason_codes=("AGENT_TIMEOUT",) if timed_out else ("AGENT_EXCEPTION",),
+                explanation=(
+                    f"{agent_id} agent timed out — fail closed"
+                    if timed_out
+                    else f"{agent_id} agent error — fail closed"
+                ),
+                timed_out=timed_out,
+                error=error or ("timeout" if timed_out else None),
+            )
+
         def _run_trend() -> AgentContribution:
             return evaluate_trend(snap, news_context=loaded_news)
 
         def _run_momentum() -> AgentContribution:
             return evaluate_momentum(snap, news_context=loaded_news)
 
-        trend: AgentContribution
-        momentum: AgentContribution
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            fut_t = pool.submit(_run_trend)
-            fut_m = pool.submit(_run_momentum)
-            try:
-                trend = fut_t.result(timeout=timeout_s)
-            except FuturesTimeout:
-                trend = AgentContribution(
-                    agent_id="trend",
-                    agent_version="4B.1",
-                    bias="INSUFFICIENT_DATA",
-                    confidence=0.0,
-                    reason_codes=("AGENT_TIMEOUT",),
-                    explanation="Trend agent timed out — fail closed",
-                    timed_out=True,
-                    error="timeout",
-                )
-            except Exception as exc:  # noqa: BLE001
-                trend = AgentContribution(
-                    agent_id="trend",
-                    agent_version="4B.1",
-                    bias="INSUFFICIENT_DATA",
-                    confidence=0.0,
-                    reason_codes=("AGENT_EXCEPTION",),
-                    explanation="Trend agent error — fail closed",
-                    error=type(exc).__name__,
-                )
-            try:
-                momentum = fut_m.result(timeout=timeout_s)
-            except FuturesTimeout:
-                momentum = AgentContribution(
-                    agent_id="momentum",
-                    agent_version="4B.1",
-                    bias="INSUFFICIENT_DATA",
-                    confidence=0.0,
-                    reason_codes=("AGENT_TIMEOUT",),
-                    explanation="Momentum agent timed out — fail closed",
-                    timed_out=True,
-                    error="timeout",
-                )
-            except Exception as exc:  # noqa: BLE001
-                momentum = AgentContribution(
-                    agent_id="momentum",
-                    agent_version="4B.1",
-                    bias="INSUFFICIENT_DATA",
-                    confidence=0.0,
-                    reason_codes=("AGENT_EXCEPTION",),
-                    explanation="Momentum agent error — fail closed",
-                    error=type(exc).__name__,
-                )
+        def _run_volume() -> AgentContribution:
+            return evaluate_volume(snap)
+
+        def _run_structure() -> AgentContribution:
+            return evaluate_structure(snap)
+
+        runners = {
+            "trend": _run_trend,
+            "momentum": _run_momentum,
+            "volume": _run_volume,
+            "structure": _run_structure,
+        }
+        results: dict[str, AgentContribution] = {}
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futures = {name: pool.submit(fn) for name, fn in runners.items()}
+            for name, fut in futures.items():
+                try:
+                    results[name] = fut.result(timeout=timeout_s)
+                except FuturesTimeout:
+                    results[name] = _fail_closed(name, timed_out=True)
+                except Exception as exc:  # noqa: BLE001
+                    results[name] = _fail_closed(name, error=type(exc).__name__)
+
+        trend = results["trend"]
+        momentum = results["momentum"]
+        volume = results["volume"]
+        structure = results["structure"]
 
         def _risk_fn(**kwargs):
             if news_advisory_enabled:
@@ -205,9 +200,14 @@ class SignalPipeline:
             market_contrib=market_contrib,
             trend=trend,
             momentum=momentum,
+            volume=volume,
+            structure=structure,
             config=self.config,
             risk_fn=_risk_fn,
             risk_state=self.risk_state,
+            regime=evaluate_regime(
+                snap, self.config.regime, max_atr_pct=self.config.risk.max_atr_pct
+            ),
         )
 
         approved = (

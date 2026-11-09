@@ -37,11 +37,18 @@ class PaperDbUnavailable(Exception):
 class PaperReadStore:
     """Query persisted paper broker state without writes or schema init."""
 
-    def __init__(self, db_path: str | Path) -> None:
+    def __init__(self, db_path: str | Path, *, isolated_sqlite: bool = False) -> None:
         self.db_path = Path(db_path)
+        self._isolated_sqlite = isolated_sqlite
         self._store: PaperStore | None = None
         self._unreadable = False
-        if supabase_sot_enabled():
+        if isolated_sqlite:
+            if self.db_path.is_file():
+                try:
+                    self._store = PaperStore(self.db_path, isolated_sqlite=True)
+                except Exception:  # noqa: BLE001 — corrupt / non-sqlite file
+                    self._unreadable = True
+        elif supabase_sot_enabled():
             self._store = PaperStore(None)
         elif self.db_path.is_file():
             try:
@@ -50,6 +57,8 @@ class PaperReadStore:
                 self._unreadable = True
 
     def exists(self) -> bool:
+        if self._isolated_sqlite:
+            return self.db_path.is_file()
         if supabase_sot_enabled():
             return get_api_settings().database_configured
         return self.db_path.is_file()

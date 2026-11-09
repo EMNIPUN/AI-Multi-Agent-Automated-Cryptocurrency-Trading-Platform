@@ -222,7 +222,12 @@ class ObservationEventRow(Base):
         {"schema": "app"},
     )
 
-    seq: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    # SQLite autoincrement requires INTEGER PRIMARY KEY. Postgres keeps BIGINT.
+    seq: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
     owner_user_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
     event_id: Mapped[str] = mapped_column(String(128), nullable=False)
     event_type: Mapped[str] = mapped_column(String(64), nullable=False)

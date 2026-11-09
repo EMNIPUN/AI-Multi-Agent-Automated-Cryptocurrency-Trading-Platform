@@ -28,7 +28,7 @@ export default function SignupPage() {
   }>({});
 
   useEffect(() => {
-    if (ready && session) router.replace("/dashboard");
+    if (ready && session) router.replace("/orchestrator");
   }, [ready, session, router]);
 
   async function onSubmit(e: React.FormEvent) {
@@ -55,7 +55,7 @@ export default function SignupPage() {
       }
       // If email confirmation is required, session may be null.
       if (data.session) {
-        router.replace("/dashboard");
+        router.replace("/orchestrator");
         return;
       }
       setDone(true);
@@ -132,7 +132,7 @@ export default function SignupPage() {
               {error}
             </p>
           ) : null}
-          <Button type="submit" variant="cyan" className="w-full" disabled={busy || !configured}>
+          <Button type="submit" variant="brand" className="w-full" disabled={busy || !configured}>
             {busy ? "Creating account…" : "Create account"}
           </Button>
         </form>

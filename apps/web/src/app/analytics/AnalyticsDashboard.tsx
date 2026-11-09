@@ -15,7 +15,7 @@ import {
 
 import { LogoLoader } from "@/components/brand/LogoLoader";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
-import { PageHeader } from "@/components/shared/PageHeader";
+import { PageFrame } from "@/components/command-center";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -328,13 +328,12 @@ export function AnalyticsDashboard() {
   }
 
   return (
-    <div>
-      <PageHeader
-        title="Paper analytics"
-        description="Read-only performance from the local paper journal. Fees already netted into realized PnL."
-      />
-
-      <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm font-medium">
+    <PageFrame
+      title="Performance Analytics"
+      description="Read-only performance from the local paper journal. Fees already netted into realized PnL."
+      modes={["paper", "readonly", "live"]}
+    >
+      <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm font-medium">
         {PAPER_ONLY}
       </div>
 
@@ -887,6 +886,6 @@ export function AnalyticsDashboard() {
           ) : null}
         </>
       ) : null}
-    </div>
+    </PageFrame>
   );
 }

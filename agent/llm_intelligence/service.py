@@ -170,7 +170,23 @@ class LlmDecisionSupportService:
                 warnings=tuple(payload["news"]["warnings"]),
                 context_hash=payload["context_hash"],
             )
-        gate = self.budget.try_begin(now_ms)
+        if hasattr(self.budget, "ready") and not self.budget.ready():
+            return self._shell(
+                status="budget_storage_unavailable",
+                symbol=symbol,
+                interval=interval,
+                decision_id=decision_id,
+                action=action,
+                verdict=verdict,
+                notional=notional,
+                now_ms=now_ms,
+                key=key,
+                error_code="budget_storage_unavailable",
+                reason="LLM budget ledger is unavailable",
+                warnings=tuple(payload["news"]["warnings"]),
+                context_hash=payload["context_hash"],
+            )
+        gate = self.budget.try_begin(now_ms, idempotency_key=key)
         if gate:
             return self._shell(
                 status=gate,

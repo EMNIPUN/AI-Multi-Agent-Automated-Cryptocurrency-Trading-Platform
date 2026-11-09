@@ -194,3 +194,49 @@ def final_account_snapshot(store: PaperStore, session_id: str) -> dict[str, str 
         "reserved_capital": qstr(sess.reserved_capital),
         "marked_equity": marked,
     }
+
+
+def analytics_to_calibration_metrics(analytics: dict[str, Any]) -> dict[str, Any]:
+    """Map 67A session analytics into offline CalibrationMetrics fields."""
+    closed = int(analytics.get("closed_trades") or 0)
+    winners = int(analytics.get("winning_trades") or 0)
+    hit = (winners / closed) if closed else None
+    exp = analytics.get("expectancy")
+    if isinstance(exp, dict):
+        exp = exp.get("value")
+    dd = analytics.get("max_drawdown_marked") or {}
+    if isinstance(dd, dict):
+        dd_amt = dd.get("max_drawdown_amount")
+        if isinstance(dd_amt, dict):
+            dd_amt = dd_amt.get("value")
+    else:
+        dd_amt = None
+    try:
+        net = float(analytics.get("net_realized_pnl") or 0.0)
+    except (TypeError, ValueError):
+        net = 0.0
+    try:
+        max_dd = float(dd_amt) if dd_amt is not None else None
+    except (TypeError, ValueError):
+        max_dd = None
+    return {
+        "sample_count": closed,
+        "trade_count": closed,
+        "hit_rate": hit,
+        "expectancy": float(exp) if exp is not None else None,
+        "net_pnl": net,
+        "max_drawdown": max_dd,
+    }
+
+
+def compare_before_after_calibration(
+    before_analytics: dict[str, Any],
+    after_analytics: dict[str, Any],
+) -> dict[str, Any]:
+    """Report before/after calibration lift from two backtest analytics payloads."""
+    from agent.multi_agent.calibration import compare_calibration_metrics
+
+    return compare_calibration_metrics(
+        analytics_to_calibration_metrics(before_analytics),
+        analytics_to_calibration_metrics(after_analytics),
+    )

@@ -33,10 +33,25 @@ def plan_import(db_path: Path) -> dict:
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     try:
-        meta = conn.execute(
-            "SELECT value FROM schema_meta WHERE key = 'schema_version'"
-        ).fetchone()
-        schema_version = int(meta["value"]) if meta else None
+        columns = {
+            row[1]
+            for row in conn.execute("PRAGMA table_info(signal_history)").fetchall()
+        }
+        if "decision_id" not in columns:
+            return {
+                "ok": False,
+                "error": "signal_history_missing",
+                "db_path": str(db_path),
+                "would_write_supabase": False,
+            }
+        try:
+            meta = conn.execute(
+                "SELECT value FROM schema_meta WHERE key = 'schema_version'"
+            ).fetchone()
+            raw_version = meta["value"] if meta else None
+            schema_version = int(raw_version) if raw_version is not None and str(raw_version).isdigit() else raw_version
+        except sqlite3.OperationalError:
+            schema_version = None
         signal_n = conn.execute("SELECT COUNT(*) AS n FROM signal_history").fetchone()["n"]
         by_action = {
             r["action"]: r["n"]
@@ -50,7 +65,12 @@ def plan_import(db_path: Path) -> dict:
                 "SELECT strategy_version, COUNT(*) AS n FROM signal_history GROUP BY strategy_version"
             )
         }
-        risk = conn.execute("SELECT halted, corrupt, day_key FROM paper_risk_state WHERE id = 1").fetchone()
+        try:
+            risk = conn.execute(
+                "SELECT halted, corrupt, day_key FROM paper_risk_state WHERE id = 1"
+            ).fetchone()
+        except sqlite3.OperationalError:
+            risk = None
         cp_n = 0
         audit_n = 0
         outbox_n = 0
@@ -84,12 +104,24 @@ def plan_import(db_path: Path) -> dict:
         ).fetchone()["n"]
 
         missing_fields = 0
+        selected = [
+            name
+            for name in (
+                "decision_id",
+                "symbol",
+                "category",
+                "interval",
+                "action",
+                "strategy_version",
+                "contributions_json",
+                "risk_json",
+                "market_json",
+            )
+            if name in columns
+        ]
         sample = conn.execute(
-            """
-            SELECT decision_id, symbol, category, interval, action, strategy_version,
-                   contributions_json, risk_json, market_json
-            FROM signal_history ORDER BY timestamp_ms ASC LIMIT 200
-            """
+            f"SELECT {', '.join(selected)} FROM signal_history "
+            "ORDER BY timestamp_ms ASC LIMIT 200"
         ).fetchall()
         for r in sample:
             for col in ("decision_id", "symbol", "category", "interval", "action", "strategy_version"):

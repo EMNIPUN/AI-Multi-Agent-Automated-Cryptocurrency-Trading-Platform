@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
         return;
       }
       setDone(true);
-      setTimeout(() => router.replace("/dashboard"), 1200);
+      setTimeout(() => router.replace("/orchestrator"), 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : mapAuthError(null));
     } finally {
@@ -122,7 +122,7 @@ export default function ResetPasswordPage() {
               {error}
             </p>
           ) : null}
-          <Button type="submit" variant="cyan" className="w-full" disabled={busy}>
+          <Button type="submit" variant="brand" className="w-full" disabled={busy}>
             {busy ? "Updating…" : "Update password"}
           </Button>
         </form>

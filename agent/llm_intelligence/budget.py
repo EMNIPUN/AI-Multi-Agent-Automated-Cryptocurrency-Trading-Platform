@@ -15,7 +15,7 @@ class BudgetGuard:
         self._calls: list[int] = []
         self._spend: list[tuple[int, float]] = []
 
-    def try_begin(self, now_ms: int) -> str | None:
+    def try_begin(self, now_ms: int, idempotency_key: str | None = None) -> str | None:
         if not self._sem.acquire(blocking=False):
             return "concurrency_limited"
         with self._lock:

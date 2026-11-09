@@ -25,9 +25,9 @@ export function Meteors({ number = 18, className }: { number?: number; className
         <span
           key={i}
           style={style}
-          className="absolute h-0.5 w-0.5 rotate-[215deg] animate-meteor rounded-full bg-cyan-300 shadow-[0_0_0_1px_#ffffff10]"
+          className="absolute h-0.5 w-0.5 rotate-[215deg] animate-meteor rounded-full bg-orange-300 shadow-[0_0_0_1px_#ffffff10]"
         >
-          <span className="pointer-events-none absolute top-1/2 -z-10 h-px w-[50px] -translate-y-1/2 bg-gradient-to-r from-cyan-400 to-transparent" />
+          <span className="pointer-events-none absolute top-1/2 -z-10 h-px w-[50px] -translate-y-1/2 bg-gradient-to-r from-orange-400 to-transparent" />
         </span>
       ))}
     </div>

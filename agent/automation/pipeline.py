@@ -109,18 +109,22 @@ class AutomatedExecutionPipeline:
                 detail="Automation in SIGNALS_ONLY — no execution intent submitted",
             )
 
-        if gates.mode is TradingMode.MAINNET_TRADING or gates.mainnet_trading_enabled:
+        # Automated pipeline never auto-submits MAINNET — Orchestrator chat Approve only.
+        if gates.mode is TradingMode.MAINNET_TRADING:
             return PipelineResult(
                 mode=gates.mode.value,
                 submitted=False,
-                state="MAINNET_LOCKED",
+                state="MAINNET_CHAT_APPROVE_ONLY",
                 intent_id=None,
                 client_order_id=None,
                 exchange_order_id=None,
                 filled=False,
                 protection_state=None,
-                risk={"verdict": "VETO", "reason_codes": ["MAINNET_LOCKED"]},
-                detail="MAINNET_TRADING has no execution path in Phase 6A",
+                risk={"verdict": "VETO", "reason_codes": ["MAINNET_CHAT_APPROVE_ONLY"]},
+                detail=(
+                    "Automated pipeline does not auto-submit MAINNET. "
+                    "Use Orchestrator propose_live_trade + Approve live trade."
+                ),
             )
 
         if req.category == "linear" and not gates.perpetual_auto_execution_enabled:

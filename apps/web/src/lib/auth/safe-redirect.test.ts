@@ -9,15 +9,15 @@ describe("safeInternalPath", () => {
   });
 
   it("blocks open redirects", () => {
-    expect(safeInternalPath("https://evil.example")).toBe("/dashboard");
-    expect(safeInternalPath("//evil.example")).toBe("/dashboard");
-    expect(safeInternalPath("\\\\evil")).toBe("/dashboard");
-    expect(safeInternalPath("dashboard")).toBe("/dashboard");
+    expect(safeInternalPath("https://evil.example")).toBe("/orchestrator");
+    expect(safeInternalPath("//evil.example")).toBe("/orchestrator");
+    expect(safeInternalPath("\\\\evil")).toBe("/orchestrator");
+    expect(safeInternalPath("dashboard")).toBe("/orchestrator");
   });
 
   it("blocks auth loops", () => {
-    expect(safeInternalPath("/login")).toBe("/dashboard");
-    expect(safeInternalPath("/signup")).toBe("/dashboard");
+    expect(safeInternalPath("/login")).toBe("/orchestrator");
+    expect(safeInternalPath("/signup")).toBe("/orchestrator");
   });
 
   it("uses fallback", () => {

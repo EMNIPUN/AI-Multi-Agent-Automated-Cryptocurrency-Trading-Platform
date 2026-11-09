@@ -18,7 +18,12 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        cyan: "rounded-full bg-white text-black hover:bg-white/90",
+        /** @deprecated Use `brand` — kept as alias during UI 2.0 migration */
+        cyan: "rounded-full bg-primary text-primary-foreground shadow hover:brightness-105",
+        brand: "rounded-full bg-primary text-primary-foreground shadow hover:brightness-105",
+        pill: "rounded-full bg-primary text-primary-foreground shadow hover:brightness-105",
+        accent:
+          "rounded-full bg-brand text-primary-foreground shadow hover:brightness-105",
       },
       size: {
         default: "h-9 px-4 py-2",

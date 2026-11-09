@@ -247,8 +247,15 @@ def test_storage_unavailable_and_shadow_status_does_not_call_a_model() -> None:
     body = allowed.json()
     assert body["historical_news_backtest_valid"] is False
     assert body["openai_called"] is False
-    assert body["llm_budget_durable_across_processes"] is False
-    assert "20261108_0010" in body["migrations_pending"]
+    assert body["provenance_status"] == "incomplete"
+    if body["last_verified_development_revision"] in {"20261108_0011", "20261108_0012"}:
+        assert body["revision_probe"] == "ok"
+        assert body["migrations_pending"] == []
+        assert body["llm_budget_durable_across_processes"] is True
+    else:
+        assert body["revision_probe"] == "unavailable"
+        assert "20261108_0010" in body["migrations_pending"]
+        assert body["llm_budget_durable_across_processes"] is False
     denied = client.get("/api/v1/backtests/shadow-status", headers={"x-forwarded-for": "203.0.113.8"})
     assert denied.status_code == 403
     clear_settings_cache()

@@ -97,6 +97,8 @@ def news_status(
         note=str(body.get("note") or ""),
         mutations=False,
         places_orders=False,
+        revision_archive_status=str(body.get("revision_archive_status") or "not_wired"),
+        historical_provenance=str(body.get("historical_provenance") or "incomplete"),
     )
 
 

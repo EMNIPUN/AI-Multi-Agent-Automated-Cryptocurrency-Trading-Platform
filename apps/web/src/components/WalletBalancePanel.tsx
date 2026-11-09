@@ -110,7 +110,7 @@ function WalletSkeleton() {
     <div className="space-y-4" role="status" aria-label="Loading wallet">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div key={i} className="rounded-2xl border border-border bg-muted/40 p-4">
             <Skeleton className="h-3 w-20 rounded-full" />
             <Skeleton className="mt-3 h-8 w-28 rounded-md" />
           </div>
@@ -139,13 +139,13 @@ function FilterChip({
       className={cn(
         "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
         active
-          ? "bg-white text-black"
-          : "bg-white/5 text-white/55 hover:bg-white/10 hover:text-white",
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted/40 text-foreground hover:bg-muted/40 hover:text-foreground",
       )}
     >
       {children}
       {typeof count === "number" ? (
-        <span className={cn("ml-1.5 tabular-nums", active ? "text-black/60" : "text-white/35")}>
+        <span className={cn("ml-1.5 tabular-nums", active ? "text-black/60" : "text-foreground")}>
           {count}
         </span>
       ) : null}
@@ -267,11 +267,11 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
         compact && "p-5",
       )}
     >
-      <BorderBeam size={190} duration={13} colorFrom="#f59e0b" colorTo="#ffffff" />
+      <BorderBeam size={190} duration={13} colorFrom="#F7A600" colorTo="#FFCE6E" />
       <div className="relative z-10 flex flex-row items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 font-display text-xl tracking-tight">
-            <Wallet className="h-4 w-4 text-white/80" />
+            <Wallet className="h-4 w-4 text-foreground" />
             Exchange wallet
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -329,7 +329,7 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
                   className={cn(
                     "rounded-2xl border p-4",
                     m.emphasize
-                      ? "border-white/15 bg-white/5"
+                      ? "border-border bg-muted/40"
                       : "border-border/60 bg-background/40",
                   )}
                 >
@@ -337,7 +337,7 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
                   <p
                     className={cn(
                       "mt-1 font-mono",
-                      m.emphasize ? "text-2xl text-white/90" : "text-lg",
+                      m.emphasize ? "text-2xl text-foreground" : "text-lg",
                       m.pnl ? pnlTone(m.value) : undefined,
                     )}
                   >
@@ -393,10 +393,10 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
 
                 <TabsContent value="overview" className="mt-4 space-y-4">
                   <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                    <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                    <div className="rounded-2xl border border-border bg-muted/50 p-4">
                       <div className="mb-3 flex items-center justify-between gap-2">
                         <div>
-                          <p className="text-sm font-medium text-white">Top holdings</p>
+                          <p className="text-sm font-medium text-foreground">Top holdings</p>
                           <p className="text-xs text-muted-foreground">
                             Largest equity share from Bybit snapshot
                           </p>
@@ -422,15 +422,15 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
                                   setSelectedCoin(c.coin);
                                   setView("holdings");
                                 }}
-                                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+                                className="w-full rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-left transition-colors hover:bg-muted/40"
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="font-medium text-white">{c.coin}</span>
-                                  <span className="font-mono text-xs text-white/70">
+                                  <span className="font-medium text-foreground">{c.coin}</span>
+                                  <span className="font-mono text-xs text-foreground">
                                     {share.toFixed(1)}%
                                   </span>
                                 </div>
-                                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted/40">
                                   <div
                                     className="h-full rounded-full bg-amber-400/80"
                                     style={{ width: `${Math.min(100, share)}%` }}
@@ -449,10 +449,10 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
                       </ScrollArea>
                     </div>
 
-                    <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-                      <p className="text-sm font-medium text-white">Snapshot</p>
+                    <div className="rounded-2xl border border-border bg-muted/50 p-4">
+                      <p className="text-sm font-medium text-foreground">Snapshot</p>
                       <p className="text-xs text-muted-foreground">Account facts from the API</p>
-                      <Separator className="my-3 bg-white/10" />
+                      <Separator className="my-3 bg-muted/40" />
                       <ScrollArea className="h-56">
                         <dl className="space-y-2 pr-3 text-sm">
                           {[
@@ -469,10 +469,10 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
                           ].map(([label, value]) => (
                             <div
                               key={label}
-                              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2"
                             >
                               <dt className="text-muted-foreground">{label}</dt>
-                              <dd className="font-mono text-white/85">{value}</dd>
+                              <dd className="font-mono text-foreground">{value}</dd>
                             </div>
                           ))}
                         </dl>
@@ -482,7 +482,7 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
                 </TabsContent>
 
                 <TabsContent value="holdings" className="mt-4 space-y-3">
-                  <div className="flex flex-wrap items-center gap-1.5 rounded-full border border-white/10 bg-black/40 p-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5 rounded-full border border-border bg-muted/70 p-1.5">
                     <FilterChip
                       active={filter === "all"}
                       count={filterCounts.all}
@@ -513,19 +513,19 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
                     </FilterChip>
                   </div>
 
-                  <div className="h-[28rem] overflow-hidden rounded-2xl border border-white/10 bg-black/25">
+                  <div className="h-[28rem] overflow-hidden rounded-2xl border border-border bg-muted/50">
                     <ResizablePanelGroup direction="horizontal" className="h-full">
                       <ResizablePanel defaultSize={62} minSize={40}>
                         <div className="flex h-full flex-col">
                           <div className="flex items-center justify-between gap-2 px-4 py-3">
                             <div>
-                              <p className="text-sm font-medium text-white">Holdings</p>
+                              <p className="text-sm font-medium text-foreground">Holdings</p>
                               <p className="text-xs text-muted-foreground">
                                 Showing {filteredCoins.length} of {coins.length}
                               </p>
                             </div>
                           </div>
-                          <Separator className="bg-white/10" />
+                          <Separator className="bg-muted/40" />
                           <ScrollArea className="min-h-0 flex-1">
                             {filteredCoins.length === 0 ? (
                               <p className="px-4 py-10 text-center text-sm text-muted-foreground">
@@ -550,7 +550,7 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
                                     return (
                                       <TableRow
                                         key={c.coin}
-                                        className={cn("cursor-pointer", active && "bg-white/5")}
+                                        className={cn("cursor-pointer", active && "bg-muted/40")}
                                         onClick={() => setSelectedCoin(c.coin)}
                                         data-state={active ? "selected" : undefined}
                                       >
@@ -584,16 +584,16 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
                       <ResizableHandle withHandle />
                       <ResizablePanel defaultSize={38} minSize={26}>
                         <div className="flex h-full flex-col p-4">
-                          <p className="text-sm font-medium text-white">Coin detail</p>
+                          <p className="text-sm font-medium text-foreground">Coin detail</p>
                           <p className="text-xs text-muted-foreground">
                             Select a row to inspect Bybit balances
                           </p>
-                          <Separator className="my-3 bg-white/10" />
+                          <Separator className="my-3 bg-muted/40" />
                           <ScrollArea className="min-h-0 flex-1">
                             {selected ? (
                               <div className="space-y-3 pr-3">
                                 <div className="flex items-center justify-between gap-2">
-                                  <h3 className="text-2xl font-medium tracking-tight text-white">
+                                  <h3 className="text-2xl font-medium tracking-tight text-foreground">
                                     {selected.coin}
                                   </h3>
                                   <Badge variant="outline" className="rounded-full">
@@ -602,7 +602,7 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
                                       : `${selectedShare.toFixed(2)}%`}
                                   </Badge>
                                 </div>
-                                <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                                <div className="h-2 overflow-hidden rounded-full bg-muted/40">
                                   <div
                                     className="h-full rounded-full bg-amber-400/80"
                                     style={{
@@ -619,12 +619,12 @@ export function WalletBalancePanel({ compact = false }: { compact?: boolean }) {
                                   ].map(([label, value]) => (
                                     <div
                                       key={label}
-                                      className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                                      className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2"
                                     >
                                       <dt className="text-muted-foreground">{label}</dt>
                                       <dd
                                         className={cn(
-                                          "font-mono text-white/90",
+                                          "font-mono text-foreground",
                                           label.includes("P&L") ? pnlTone(value) : undefined,
                                         )}
                                       >

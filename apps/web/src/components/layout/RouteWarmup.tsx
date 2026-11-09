@@ -13,6 +13,9 @@ const WARM_APIS = [
   "/api/backtests/runs?limit=1",
   "/api/exchange/wallet",
   "/api/signals/status",
+  "/api/orchestrator/status",
+  "/api/llm/status",
+  "/api/news/status",
 ] as const;
 
 function idle(cb: () => void, timeout = 1800) {
@@ -39,7 +42,9 @@ export function RouteWarmup() {
 
   useEffect(() => {
     const hrefs = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.href));
-    const unique = Array.from(new Set([...hrefs, "/notifications", "/agents"]));
+    const unique = Array.from(
+      new Set([...hrefs, "/notifications", "/strategy", "/system", "/orchestrator"]),
+    );
 
     let cancelled = false;
     let apiIndex = 0;

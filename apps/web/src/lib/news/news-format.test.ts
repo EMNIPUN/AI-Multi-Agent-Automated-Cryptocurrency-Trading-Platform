@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { isAllowedPublicNewsPath, isAllowedPublicNewsPostPath, isAllowedPublicNewsPutPath } from "@/lib/security/public-news-proxy";
-import { NEWS_ADVISORY_LABEL, filterNewsRows, newsViewState, severityBadge } from "@/lib/news/news-format";
+import {
+  NEWS_ADVISORY_LABEL,
+  filterNewsRows,
+  formatNewsTime,
+  friendlySchedulerNote,
+  newsViewState,
+  severityBadge,
+} from "@/lib/news/news-format";
 
 describe("news dashboard state", () => {
   it("keeps disabled, empty, error and stale distinct", () => {
@@ -43,6 +50,16 @@ describe("news dashboard state", () => {
 
   it("states that news does not change trading decisions", () => {
     expect(NEWS_ADVISORY_LABEL).toBe("News Advisory Only — Trading Decisions Unchanged");
+  });
+
+  it("formats relative news times and friendly scheduler notes", () => {
+    expect(formatNewsTime(null)).toBe("Unknown time");
+    expect(formatNewsTime(Date.now() - 90_000)).toMatch(/m ago/);
+    const note = friendlySchedulerNote(
+      "Manual collection required until NEWS_AUTO_COLLECTION_ENABLED=true",
+    );
+    expect(note.summary.toLowerCase()).toContain("automatic collection");
+    expect(note.detail).toContain("NEWS_AUTO_COLLECTION_ENABLED");
   });
 
   it("allows only news alert proxy paths", () => {

@@ -33,9 +33,9 @@ export function PublicTickerStrip() {
   }, []);
 
   return (
-    <div className="mb-4 rounded-2xl border border-white/10 bg-card/50 px-3 py-2.5 shadow-[0_0_40px_-24px_rgba(245,158,11,0.25)]">
+    <div className="mb-4 rounded-2xl border border-border bg-card/50 px-3 py-2.5 shadow-[0_0_40px_-24px_rgba(245,158,11,0.25)]">
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <Badge variant="outline" className="rounded-full border-white/20 text-white/90">
+        <Badge variant="outline" className="rounded-full border-border text-foreground">
           PUBLIC MARKET
         </Badge>
         <span className="text-xs text-muted-foreground">

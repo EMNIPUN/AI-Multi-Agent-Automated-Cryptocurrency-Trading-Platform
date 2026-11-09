@@ -126,7 +126,7 @@ export function MarketCandleChart({
       priceLineVisible: false,
       lastValueVisible: false,
     };
-    const ema20 = chart.addLineSeries({ color: "#38bdf8", ...lineOpts });
+    const ema20 = chart.addLineSeries({ color: "#F7A600", ...lineOpts });
     const ema50 = chart.addLineSeries({ color: "#a78bfa", ...lineOpts });
     const ema200 = chart.addLineSeries({ color: "#fbbf24", ...lineOpts });
     seriesRef.current = { candle, volume, ema20, ema50, ema200 };

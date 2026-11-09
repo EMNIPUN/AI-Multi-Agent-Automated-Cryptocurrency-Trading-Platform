@@ -28,7 +28,7 @@ export function DecisionInspector({
       : "Evidence unavailable";
 
   return (
-    <Card className="h-full overflow-hidden border-[#253348] bg-[#101827]/95 shadow-[var(--panel-shadow)] backdrop-blur-sm">
+    <Card className="h-full overflow-hidden border-border bg-card/95 shadow-[var(--panel-shadow)] backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-base">Why This Decision?</CardTitle>
         <CardDescription>
@@ -193,7 +193,7 @@ export function DecisionInspector({
                 </p>
               ) : (
                 projection.orders.slice(0, 4).map((order) => (
-                  <div key={order.client_order_id} className="mb-2 rounded border border-[#253348] p-2">
+                  <div key={order.client_order_id} className="mb-2 rounded border border-border p-2">
                     <div className="flex justify-between gap-2">
                       <span className="font-mono text-xs">{order.client_order_id}</span>
                       <Badge variant="outline">{order.state}</Badge>

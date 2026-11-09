@@ -104,16 +104,16 @@ export function AgentWorkflowLive({
   ).length;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:p-6">
+    <div className="relative overflow-hidden rounded-3xl border border-border bg-muted/40 p-5 md:p-6">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-amber-200/80">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-orange-300/80">
             Live workflow
           </p>
-          <h2 className="mt-1 text-xl font-medium tracking-tight text-white">
+          <h2 className="mt-1 text-xl font-medium tracking-tight text-foreground">
             How your agent thinks right now
           </h2>
-          <p className="mt-1 text-sm text-white/50">
+          <p className="mt-1 text-sm text-foreground">
             Trace steps expand like tool calls — open a stage for evidence.
           </p>
         </div>
@@ -134,7 +134,7 @@ export function AgentWorkflowLive({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+      <div className="rounded-2xl border border-border bg-muted/60 p-4">
         <Subagent open={open ?? status === "running"} onOpenChange={setOpen}>
           <SubagentHeader
             title={overallTitle(visible, status)}
@@ -146,7 +146,7 @@ export function AgentWorkflowLive({
             {status === "running" ? (
               <Shimmer className="text-xs">Generating response…</Shimmer>
             ) : (
-              <p className="text-xs text-white/55">
+              <p className="text-xs text-foreground">
                 Pipeline evidence from the live worker. Completed steps stay past tense; active
                 steps shimmer while they run.
               </p>
@@ -195,15 +195,15 @@ export function AgentWorkflowLive({
                         </TraceLine>
                       </TraceCollapsibleTrigger>
                       <TraceCollapsibleContent keepMounted className="text-foreground">
-                        <p className="text-sm text-white/80">{stage.description}</p>
-                        <p className="mt-1 text-xs text-white/50">{stage.summary}</p>
+                        <p className="text-sm text-foreground">{stage.description}</p>
+                        <p className="mt-1 text-xs text-foreground">{stage.summary}</p>
                         {stage.eventIds.length > 0 ? (
-                          <p className="mt-2 text-[11px] text-white/40">
+                          <p className="mt-2 text-[11px] text-foreground">
                             {stage.eventIds.length} linked evidence event
                             {stage.eventIds.length === 1 ? "" : "s"}
                           </p>
                         ) : (
-                          <p className="mt-2 text-[11px] text-white/40">No linked events yet</p>
+                          <p className="mt-2 text-[11px] text-foreground">No linked events yet</p>
                         )}
                       </TraceCollapsibleContent>
                     </TraceCollapsible>

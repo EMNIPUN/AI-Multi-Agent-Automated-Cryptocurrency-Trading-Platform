@@ -24,6 +24,10 @@ export const PROTECTED_ROUTE_PREFIXES = [
   "/notifications",
   "/news",
   "/llm",
+  "/orchestrator",
+  "/autonomy",
+  "/strategy",
+  "/system",
 ] as const;
 
 export function pathStartsWith(pathname: string, prefixes: readonly string[]): boolean {

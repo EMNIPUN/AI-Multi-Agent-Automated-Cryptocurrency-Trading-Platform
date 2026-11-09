@@ -35,6 +35,17 @@ def _build_runtime_service(config: LlmConfig) -> LlmDecisionSupportService:
 
         engine = create_db_engine()
         repo = PostgresLlmAuditRepository(engine)
+        from agent.llm_intelligence.durable_budget import FailClosedBudget
+        from apps.api.app.llm.durable_budget_pg import PostgresDurableBudget
+
+        budget = PostgresDurableBudget(
+            engine,
+            max_calls_per_hour=config.max_calls_per_hour,
+            daily_budget_usd=config.daily_budget_usd,
+            min_call_usd=config.min_call_usd,
+        )
+        if not budget.ready():
+            budget = FailClosedBudget("migration 20261108_0011 is not applied")
         if not repo.ready():
             return LlmDecisionSupportService(
                 config=config,
@@ -44,6 +55,7 @@ def _build_runtime_service(config: LlmConfig) -> LlmDecisionSupportService:
                     model=config.model,
                     timeout_s=config.timeout_seconds,
                 ),
+                budget=budget,
             )
         return LlmDecisionSupportService(
             config=config,
@@ -53,12 +65,16 @@ def _build_runtime_service(config: LlmConfig) -> LlmDecisionSupportService:
                 model=config.model,
                 timeout_s=config.timeout_seconds,
             ),
+            budget=budget,
         )
     except Exception:
+        from agent.llm_intelligence.durable_budget import FailClosedBudget
+
         return LlmDecisionSupportService(
             config=config,
             repository=UnavailableLlmAuditRepository(reason),
             provider=None,
+            budget=FailClosedBudget("llm storage unavailable"),
         )
 
 

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { PageHeader } from "@/components/shared/PageHeader";
+import { PageFrame } from "@/components/command-center";
 import { LogoLoader } from "@/components/brand/LogoLoader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -170,12 +170,11 @@ export default function ExchangeAccountsPage() {
   }
 
   return (
-    <div>
-      <PageHeader
-        title="Exchange accounts"
-        description="Secure Bybit account bindings — ownership enforced server-side."
-      />
-
+    <PageFrame
+      title="Exchanges"
+      description="Secure Bybit account bindings — ownership enforced server-side. Live trading stays locked."
+      modes={["readonly", "live"]}
+    >
       <DataModeBanner
         mode="demo"
         notes={[
@@ -357,6 +356,6 @@ export default function ExchangeAccountsPage() {
           )}
         </div>
       )}
-    </div>
+    </PageFrame>
   );
 }

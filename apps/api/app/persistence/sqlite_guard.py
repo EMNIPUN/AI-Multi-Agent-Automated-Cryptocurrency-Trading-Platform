@@ -49,15 +49,18 @@ def create_agent_engine(
     db_path: str | Path | None = None,
     *,
     pool_pre_ping: bool = True,
+    isolated_sqlite: bool = False,
 ) -> Engine:
     """
     Process-scoped engine for agent stores.
 
     When SUPABASE_SOT_ENABLED (default), requires DATABASE_URL — no SQLite files.
-    When disabled, optional db_path selects file-backed SQLite for offline tests.
+    ``isolated_sqlite`` is only for one backtest journal. It does not change
+    process environment or the engine used by paper and signal stores.
+    When source-of-truth mode is disabled, optional db_path selects file-backed SQLite.
     Offline SQLite maps schema ``app`` → default via schema_translate_map.
     """
-    if supabase_sot_enabled():
+    if supabase_sot_enabled() and not isolated_sqlite:
         # db_path is ignored under SoT (Postgres is the only durable store).
         settings = get_api_settings()
         url = settings.sqlalchemy_url()
@@ -109,6 +112,70 @@ def agent_sessionmaker(engine: Engine | None = None) -> sessionmaker[Session]:
         return sm
 
 
+def upgrade_sqlite_missing_columns(engine: Engine) -> None:
+    """Add ORM columns onto an existing offline SQLite file without dropping rows.
+
+    Postgres schema changes stay in Alembic. This path is only for local files
+    created before owner_user_id and the later execution columns existed.
+    """
+    if engine.dialect.name != "sqlite":
+        return
+    from sqlalchemy import Boolean, Float, Integer, inspect, text
+    from sqlalchemy import Uuid as SqlUuid
+
+    from apps.api.app.models import Base
+
+    from apps.api.app.persistence.owner import resolve_sot_owner_user_id
+
+    inspector = inspect(engine)
+    existing = set(inspector.get_table_names())
+    local_owner = resolve_sot_owner_user_id(required=False).hex
+    with engine.begin() as conn:
+        for table in Base.metadata.sorted_tables:
+            if table.name not in existing:
+                continue
+            have = {col["name"] for col in inspector.get_columns(table.name)}
+            for col in table.columns:
+                if col.name in have or col.primary_key:
+                    continue
+                ddl_type = "TEXT"
+                default = "''"
+                if isinstance(col.type, SqlUuid):
+                    ddl_type = "CHAR(32)"
+                    default = f"'{local_owner}'"
+                elif isinstance(col.type, (Integer, Boolean)):
+                    ddl_type = "INTEGER"
+                    default = "0"
+                elif isinstance(col.type, Float):
+                    ddl_type = "REAL"
+                    default = "0"
+                elif col.nullable:
+                    default = "NULL"
+                quoted = f'"{table.name}"'
+                column = f'"{col.name}"'
+                if col.nullable:
+                    conn.execute(text(f"ALTER TABLE {quoted} ADD COLUMN {column} {ddl_type}"))
+                else:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {quoted} ADD COLUMN {column} {ddl_type} "
+                            f"NOT NULL DEFAULT {default}"
+                        )
+                    )
+        conn.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS schema_meta "
+                "(key TEXT PRIMARY KEY, value TEXT NOT NULL)"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT OR IGNORE INTO schema_meta (key, value) "
+                "VALUES ('schema_version', 'orm')"
+            )
+        )
+
+
 def bootstrap_agent_schema(engine: Engine) -> None:
     """Create ORM tables for offline SQLite test engines (SUPABASE_SOT_ENABLED=false)."""
     if engine.dialect.name != "sqlite":
@@ -119,3 +186,4 @@ def bootstrap_agent_schema(engine: Engine) -> None:
 
     # Keep schema="app"; ATTACH handler in create_agent_engine makes app.* resolvable.
     Base.metadata.create_all(engine, checkfirst=True)
+    upgrade_sqlite_missing_columns(engine)

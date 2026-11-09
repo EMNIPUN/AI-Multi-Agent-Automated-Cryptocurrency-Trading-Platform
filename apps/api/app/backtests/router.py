@@ -169,6 +169,32 @@ def get_orders(
         raise _map_artifact_error(exc) from exc
 
 
+_NEWS_MIGRATION_CHAIN = (
+    "20261108_0008",
+    "20261108_0009",
+    "20261108_0010",
+    "20261108_0011",
+)
+
+
+def _live_alembic_revision() -> str | None:
+    """Read-only revision probe. Never logs a connection string."""
+    try:
+        from sqlalchemy import text
+
+        from apps.api.app.db import create_db_engine
+
+        engine = create_db_engine()
+        try:
+            with engine.connect() as conn:
+                value = conn.execute(text("SELECT version_num FROM app.alembic_version")).scalar()
+            return str(value) if value else None
+        finally:
+            engine.dispose()
+    except Exception:
+        return None
+
+
 @router.get("/shadow-status")
 def shadow_status(
     request: Request,
@@ -177,14 +203,24 @@ def shadow_status(
     """Read-only provenance gate. Does not run a backtest or call a model."""
     if settings.backtest_read_api_enabled:
         assert_operator_local_diagnostic(request, settings)
+    revision = _live_alembic_revision()
+    if revision is None:
+        pending = list(_NEWS_MIGRATION_CHAIN)
+        probe = "unavailable"
+        durable = False
+    else:
+        pending = [item for item in _NEWS_MIGRATION_CHAIN if item > revision]
+        probe = "ok"
+        durable = revision >= "20261108_0011"
     return {
         "enabled": bool(settings.backtest_read_api_enabled),
         "historical_news_backtest_valid": False,
         "provenance_status": "incomplete",
-        "migrations_pending": ["20261108_0008", "20261108_0009", "20261108_0010"],
-        "last_verified_development_revision": "20261108_0007",
+        "migrations_pending": pending,
+        "last_verified_development_revision": revision,
+        "revision_probe": probe,
         "openai_called": False,
-        "llm_budget_durable_across_processes": False,
+        "llm_budget_durable_across_processes": durable,
         "research_policies_activated": False,
         "decisions_unchanged": True,
         "labels": [
@@ -192,8 +228,9 @@ def shadow_status(
             "Advisory Only — Trading Decisions Unchanged",
         ],
         "note": (
-            "app.news_events keeps the latest upsert only. "
-            "Historical news backtesting is not valid until append-only revisions exist."
+            "Events stored before revision archiving have no reconstructed history. "
+            "historical_news_backtest_valid stays false until an archive is complete "
+            "for the requested window."
         ),
     }
 

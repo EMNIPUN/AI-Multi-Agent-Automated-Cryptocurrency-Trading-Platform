@@ -2,9 +2,37 @@ from __future__ import annotations
 
 import os
 
+import pytest
+
 # Offline unit tests use SQLAlchemy SQLite engines (no sqlite3 module in stores).
 # Production SoT remains Supabase when SUPABASE_SOT_ENABLED=true outside pytest.
 os.environ["SUPABASE_SOT_ENABLED"] = "false"
+
+
+@pytest.fixture(autouse=True)
+def _reset_orchestrator_chat_state() -> None:
+    """Futures intake / live proposals are process-global — clear between tests."""
+    try:
+        from agent.orchestrator.analysis_memory import reset_analysis_memory_for_tests
+        from agent.orchestrator.futures_intake import reset_futures_intake_for_tests
+        from agent.orchestrator.live_trade_proposals import reset_live_proposals_for_tests
+
+        reset_futures_intake_for_tests()
+        reset_live_proposals_for_tests()
+        reset_analysis_memory_for_tests()
+    except Exception:  # noqa: BLE001
+        pass
+    yield
+    try:
+        from agent.orchestrator.analysis_memory import reset_analysis_memory_for_tests
+        from agent.orchestrator.futures_intake import reset_futures_intake_for_tests
+        from agent.orchestrator.live_trade_proposals import reset_live_proposals_for_tests
+
+        reset_futures_intake_for_tests()
+        reset_live_proposals_for_tests()
+        reset_analysis_memory_for_tests()
+    except Exception:  # noqa: BLE001
+        pass
 
 try:
     from apps.api.app.config import clear_settings_cache
@@ -14,6 +42,22 @@ except Exception:  # noqa: BLE001
     pass
 
 from agent.config import AgentSettings
+
+# Developer .env may enable news feeds and the paper supervisor. Unit tests
+# expect those gates to stay at their code defaults unless a test sets them.
+for _leaked in (
+    "NEWS_RSS_FEED_URLS",
+    "NEWS_COLLECTION_ENABLED",
+    "NEWS_READ_API_ENABLED",
+    "NEWS_AGENT_ADVISORY_ENABLED",
+    "NEWS_ALERTS_ENABLED",
+    "NEWS_LLM_ENABLED",
+    "NEWS_AUTO_COLLECTION_ENABLED",
+    "NEWS_TELEGRAM_ENABLED",
+    "CRYPTONOVA_PAPER_SUPERVISOR",
+):
+    os.environ.pop(_leaked, None)
+clear_settings_cache()
 
 
 def make_settings(**overrides) -> AgentSettings:

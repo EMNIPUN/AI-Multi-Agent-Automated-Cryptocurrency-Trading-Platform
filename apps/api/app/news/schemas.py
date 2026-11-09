@@ -32,6 +32,8 @@ class NewsStatusResponse(BaseModel):
     note: str
     mutations: bool = False
     places_orders: bool = False
+    revision_archive_status: str = "not_wired"
+    historical_provenance: str = "incomplete"
 
 
 class NewsArticleListResponse(BaseModel):

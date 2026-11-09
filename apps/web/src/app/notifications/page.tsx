@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { LogoLoader } from "@/components/brand/LogoLoader";
+import { PageFrame } from "@/components/command-center";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
-import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { localAgentFixture } from "@/lib/fixtures/agentSnapshot";
@@ -98,11 +98,11 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div>
-      <PageHeader
-        title="Notifications"
-        description="Agent, risk, and reconciliation alerts derived from the current snapshot. Duplicate event IDs are dropped."
-      />
+    <PageFrame
+      title="Notifications"
+      description="Agent, risk, and reconciliation alerts derived from the current snapshot. Duplicate event IDs are dropped."
+      modes={["readonly", "live"]}
+    >
       <DataModeBanner
         mode={mode}
         notes={[
@@ -143,6 +143,6 @@ export default function NotificationsPage() {
           })}
         </div>
       )}
-    </div>
+    </PageFrame>
   );
 }

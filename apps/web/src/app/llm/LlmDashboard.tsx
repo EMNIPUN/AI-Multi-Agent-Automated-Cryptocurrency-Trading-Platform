@@ -82,8 +82,13 @@ export function LlmDashboard() {
           <p>Storage: {String(status?.storage_kind ?? "unknown")}</p>
           <p>
             Estimated spend today:{" "}
-            {String((status?.budget as AnyRow | undefined)?.estimated_spend_today_usd ?? "—")}
+            {String((status?.budget as AnyRow | undefined)?.estimated_spend_today_usd ?? "—")} / daily{" "}
+            {String((status?.budget as AnyRow | undefined)?.daily_budget_usd ?? "—")}
           </p>
+          <p>
+            Remaining budget: {String((status?.budget as AnyRow | undefined)?.remaining_usd ?? "—")}
+          </p>
+          <p>Calls this hour: {String((status?.budget as AnyRow | undefined)?.calls_this_hour ?? "—")}</p>
         </CardContent>
       </Card>
       <Card>

@@ -125,6 +125,7 @@ class CoordinatorDecision:
     execution_allowed: Literal[False] = False
     news_advisory: dict[str, Any] | None = None
     news_changed_decision: bool = False
+    decision_context: dict[str, Any] = field(default_factory=dict)
 
     def to_public_dict(self) -> dict[str, Any]:
         return {
@@ -142,6 +143,7 @@ class CoordinatorDecision:
             "market_quality": self.market_quality,
             "config_hash": self.config_hash,
             "source_mode": self.source_mode,
+            "decision_context": self.decision_context,
             "reason_codes": list(self.reason_codes),
             "explanation": self.explanation,
             "execution_allowed": False,

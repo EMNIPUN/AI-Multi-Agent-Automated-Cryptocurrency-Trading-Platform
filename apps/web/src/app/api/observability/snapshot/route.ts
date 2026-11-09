@@ -62,9 +62,45 @@ export async function GET(request: Request) {
       );
     }
     if (token) {
-      return proxyJsonToFastApi(request, "/api/v1/observability/worker-snapshot", {
-        allowOperatorBreakGlass: false,
-      });
+      const authed = await proxyJsonToFastApi(
+        request,
+        "/api/v1/observability/worker-snapshot",
+        { allowOperatorBreakGlass: false },
+      );
+      // Local single-operator: JWT + PRIVATE_DATA_READS off returns 403
+      // (ownership_schema_required). Fall back to loopback diagnostic when
+      // break-glass is explicitly enabled — never invent telemetry.
+      if (authed.status === 403 && breakGlass) {
+        const detail = await authed
+          .clone()
+          .json()
+          .then((body: { detail?: string }) => String(body?.detail || ""))
+          .catch(() => "");
+        if (
+          detail === "ownership_schema_required" ||
+          detail === "exchange_binding_missing" ||
+          detail === "forbidden"
+        ) {
+          try {
+            const res = await fetch(`${apiInternalBase()}/api/v1/observability/worker-snapshot`, {
+              headers: { Accept: "application/json" },
+              cache: "no-store",
+              redirect: "error",
+            });
+            const payload = await res.json().catch(() => ({ detail: "invalid_json" }));
+            return NextResponse.json(payload, {
+              status: res.status,
+              headers: { "Cache-Control": "no-store" },
+            });
+          } catch {
+            return NextResponse.json(
+              unavailable("Worker telemetry API unreachable for operator-local fallback."),
+              { headers: { "Cache-Control": "no-store" } },
+            );
+          }
+        }
+      }
+      return authed;
     }
     return proxyJsonToFastApi(request, "/api/v1/observability/worker-snapshot", {
       allowOperatorBreakGlass: true,

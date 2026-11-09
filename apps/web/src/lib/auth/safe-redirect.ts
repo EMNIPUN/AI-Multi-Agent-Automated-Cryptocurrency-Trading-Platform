@@ -17,7 +17,7 @@ export function isAuthPath(pathname: string): boolean {
 
 export function safeInternalPath(
   candidate: string | null | undefined,
-  fallback = "/dashboard",
+  fallback = "/orchestrator",
 ): string {
   if (!candidate) return fallback;
   const next = candidate.trim();

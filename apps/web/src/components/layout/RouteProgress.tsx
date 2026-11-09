@@ -119,7 +119,7 @@ export function RouteProgress() {
     >
       <div
         className={cn(
-          "h-full bg-gradient-to-r from-amber-400 via-white to-white shadow-[0_0_12px_rgba(245,158,11,0.45)] transition-[width] duration-200 ease-out",
+          "h-full bg-gradient-to-r from-brand via-chart-1 to-primary/40 shadow-[0_0_12px_hsl(var(--brand)/0.45)] transition-[width] duration-200 ease-out",
           !active && "opacity-0",
         )}
         style={{ width: `${width}%` }}

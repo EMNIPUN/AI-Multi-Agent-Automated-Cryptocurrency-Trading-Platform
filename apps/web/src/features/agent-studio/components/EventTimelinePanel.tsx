@@ -87,7 +87,7 @@ export function EventTimelinePanel({
   }, [events, category, query]);
 
   return (
-    <div className="rounded-xl border border-[#253348] bg-[#101827] p-4">
+    <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="font-display text-lg">Activity timeline</h2>
@@ -148,7 +148,7 @@ export function EventTimelinePanel({
                     className={`mb-2 w-full cursor-pointer rounded-lg border px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       selected
                         ? "border-primary bg-primary/10"
-                        : "border-[#253348] bg-[#080D19]/60 hover:border-primary/40"
+                        : "border-border bg-muted/40 hover:border-primary/40"
                     }`}
                     onClick={() => {
                       onSelect(event.event_id);

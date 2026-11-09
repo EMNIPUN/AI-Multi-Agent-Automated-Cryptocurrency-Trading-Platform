@@ -274,8 +274,8 @@ class RealBybitTestnetAdapter:
     """
     Live Testnet pybit wrapper — constructed only when env is Testnet.
 
-    place_order still refuses until TESTNET_ORDER_SUBMISSION_APPROVED.
-    Never builds a mainnet write client.
+    Mutating calls require TESTNET_ORDER_SUBMISSION_APPROVED (+ dual mode gates).
+    Never builds a mainnet write client. LIVE remains a separate denied path.
     """
 
     environment = AdapterEnvironment.TESTNET
@@ -288,35 +288,161 @@ class RealBybitTestnetAdapter:
             raise AutomationGateError("mainnet_flag_blocks_adapter")
         self._session = session
 
+    def _ret(self, raw: dict[str, Any]) -> dict[str, Any]:
+        if int(raw.get("retCode", -1)) != 0:
+            raise RuntimeError(f"bybit_error:{raw.get('retCode')}:{raw.get('retMsg')}")
+        result = raw.get("result")
+        return result if isinstance(result, dict) else {}
+
     def get_balance(self) -> BalanceSnapshot:
-        # Read path may be used later under Testnet mode; still no orders here.
-        raise NotImplementedError("real_balance_deferred_until_operator_connectivity_approval")
+        raw = self._session.get_wallet_balance(accountType="UNIFIED")
+        result = self._ret(raw)
+        lists = result.get("list") or []
+        row = lists[0] if lists else {}
+        coins = row.get("coin") or []
+        usdt = next((c for c in coins if str(c.get("coin") or "").upper() == "USDT"), None)
+        equity = float(row.get("totalEquity") or (usdt or {}).get("equity") or 0.0)
+        available = float(
+            (usdt or {}).get("availableToWithdraw")
+            or (usdt or {}).get("walletBalance")
+            or row.get("totalAvailableBalance")
+            or 0.0
+        )
+        return BalanceSnapshot(total_equity=equity, available_balance=available, environment="testnet")
 
     def get_instrument(self, *, category: str, symbol: str) -> InstrumentConstraints:
-        raise NotImplementedError("real_instrument_deferred")
+        raw = self._session.get_instruments_info(category=category, symbol=symbol.upper())
+        result = self._ret(raw)
+        rows = result.get("list") or []
+        if not rows:
+            raise KeyError(f"instrument_unknown:{category}:{symbol}")
+        info = rows[0]
+        lot = info.get("lotSizeFilter") or {}
+        price = info.get("priceFilter") or {}
+        lev = info.get("leverageFilter") or {}
+        return InstrumentConstraints(
+            symbol=symbol.upper(),
+            category=category,
+            min_order_qty=float(lot.get("minOrderQty") or 0.0),
+            qty_step=float(lot.get("qtyStep") or 0.0),
+            min_order_amt=float(lot.get("minNotionalValue") or lot.get("minOrderAmt") or 0.0),
+            tick_size=float(price.get("tickSize") or 0.0),
+            max_leverage=float(lev.get("maxLeverage")) if lev.get("maxLeverage") else None,
+        )
 
     def place_order(self, **kwargs: Any) -> OrderAck:
         MockBybitTestnetAdapter._assert_submission_gate()
-        # Even if gates open, Phase 6A stops before enabling this body without
-        # a separate connectivity checklist approval.
-        raise AutomationGateError(
-            "real_testnet_place_order_blocked_pending_connectivity_approval"
+        assert_segment_allowed(str(kwargs.get("category") or "linear"))
+        link = str(kwargs.get("orderLinkId") or kwargs.get("client_order_id") or "")
+        if not link:
+            raise ValueError("client_order_id_required")
+        payload = {
+            "category": kwargs.get("category", "linear"),
+            "symbol": str(kwargs.get("symbol") or "").upper(),
+            "side": kwargs.get("side"),
+            "orderType": kwargs.get("orderType") or kwargs.get("order_type") or "Market",
+            "qty": str(kwargs.get("qty")),
+            "orderLinkId": link,
+            "timeInForce": kwargs.get("timeInForce") or "GTC",
+        }
+        if kwargs.get("price") is not None:
+            payload["price"] = str(kwargs["price"])
+        raw = self._session.place_order(**payload)
+        result = self._ret(raw)
+        return OrderAck(
+            client_order_id=link,
+            exchange_order_id=str(result.get("orderId") or "") or None,
+            status="Accepted",
+            raw={**result, "retCode": 0},
+            acknowledged_at_ms=int(time.time() * 1000),
         )
 
     def cancel_order(self, **kwargs: Any) -> OrderAck:
-        raise AutomationGateError("real_testnet_cancel_blocked_pending_approval")
+        MockBybitTestnetAdapter._assert_submission_gate()
+        link = str(kwargs.get("orderLinkId") or "")
+        payload = {
+            "category": kwargs.get("category", "linear"),
+            "symbol": str(kwargs.get("symbol") or "").upper(),
+            "orderLinkId": link,
+        }
+        if kwargs.get("orderId"):
+            payload["orderId"] = kwargs["orderId"]
+        raw = self._session.cancel_order(**payload)
+        result = self._ret(raw)
+        return OrderAck(
+            client_order_id=link,
+            exchange_order_id=str(result.get("orderId") or "") or None,
+            status="Cancelled",
+            raw=result,
+            acknowledged_at_ms=int(time.time() * 1000),
+        )
 
     def get_order(self, **kwargs: Any) -> dict[str, Any]:
-        raise NotImplementedError("real_get_order_deferred")
+        raw = self._session.get_open_orders(
+            category=kwargs.get("category", "linear"),
+            symbol=str(kwargs.get("symbol") or "").upper(),
+            orderLinkId=kwargs.get("orderLinkId"),
+            orderId=kwargs.get("orderId"),
+        )
+        result = self._ret(raw)
+        rows = result.get("list") or []
+        if not rows:
+            return {"orderStatus": "Unknown", "orderLinkId": kwargs.get("orderLinkId")}
+        return dict(rows[0])
 
     def list_fills(self, **kwargs: Any) -> list[FillRecord]:
-        raise NotImplementedError("real_fills_deferred")
+        raw = self._session.get_executions(
+            category=kwargs.get("category", "linear"),
+            symbol=str(kwargs.get("symbol") or "").upper(),
+            orderId=kwargs.get("order_id"),
+        )
+        result = self._ret(raw)
+        out: list[FillRecord] = []
+        for row in result.get("list") or []:
+            out.append(
+                FillRecord(
+                    exec_id=str(row.get("execId") or ""),
+                    order_id=str(row.get("orderId") or ""),
+                    qty=float(row.get("execQty") or 0.0),
+                    price=float(row.get("execPrice") or 0.0),
+                    fee=float(row.get("execFee") or 0.0),
+                    is_maker=bool(row.get("isMaker")),
+                )
+            )
+        return out
 
     def get_position(self, *, category: str, symbol: str) -> PositionView:
-        raise NotImplementedError("real_position_deferred")
+        raw = self._session.get_positions(category=category, symbol=symbol.upper())
+        result = self._ret(raw)
+        rows = result.get("list") or []
+        if not rows:
+            return PositionView(symbol.upper(), category, 0.0, "Flat", None, None)
+        row = rows[0]
+        size = float(row.get("size") or 0.0)
+        side = str(row.get("side") or "Flat")
+        if size == 0:
+            side = "Flat"
+        return PositionView(
+            symbol=symbol.upper(),
+            category=category,
+            size=size,
+            side=side,
+            avg_price=float(row["avgPrice"]) if row.get("avgPrice") not in (None, "") else None,
+            unrealised_pnl=float(row["unrealisedPnl"]) if row.get("unrealisedPnl") not in (None, "") else None,
+            stop_loss=str(row["stopLoss"]) if row.get("stopLoss") not in (None, "") else None,
+            take_profit=str(row["takeProfit"]) if row.get("takeProfit") not in (None, "") else None,
+        )
 
     def set_trading_stop(self, spec: ProtectiveOrderSpec) -> dict[str, Any]:
-        raise AutomationGateError("real_testnet_stop_blocked_pending_approval")
+        MockBybitTestnetAdapter._assert_submission_gate()
+        raw = self._session.set_trading_stop(
+            category=spec.category,
+            symbol=spec.symbol.upper(),
+            stopLoss=spec.stop_loss,
+            takeProfit=spec.take_profit,
+            positionIdx=spec.position_idx,
+        )
+        return self._ret(raw)
 
 
 def assert_segment_allowed(category: str) -> MarketSegment:

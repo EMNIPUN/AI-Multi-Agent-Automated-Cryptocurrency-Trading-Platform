@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import func, select, update
+from sqlalchemy import bindparam, func, select, text, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -119,6 +119,7 @@ class SignalHistoryStore:
         bootstrap_agent_schema(self._engine)
         self._Session = agent_sessionmaker(self._engine)
         self._lock = threading.RLock()
+        self._ensure_outbox_table()
         self._ensure_risk_row()
 
     def _session(self) -> Session:
@@ -163,7 +164,6 @@ class SignalHistoryStore:
         outbox_payload: dict[str, Any] | None = None,
         enqueue_outbox: bool = True,
     ) -> bool:
-        del outbox_payload, enqueue_outbox  # outbox retired — Supabase is SoT
         inserted = False
         public = sanitize_public_json(decision.to_public_dict())
         indicators: dict[str, Any] = {}
@@ -236,6 +236,14 @@ class SignalHistoryStore:
                     )
                 if fail_after == "checkpoint":
                     raise SignalHistoryStoreError("persist_atomic_failed:injected_checkpoint")
+                if enqueue_outbox and outbox_payload is not None and inserted:
+                    self._insert_outbox(
+                        session,
+                        event_id=str(decision.decision_id),
+                        event_type="signal_decision",
+                        payload=outbox_payload,
+                        now_ms=now_ms,
+                    )
                 session.commit()
                 return inserted
             except SignalHistoryStoreError:
@@ -652,6 +660,109 @@ class SignalHistoryStore:
             finally:
                 session.close()
 
+    def _ensure_outbox_table(self) -> None:
+        if self._engine.dialect.name != "sqlite":
+            return
+        with self._engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS cloud_sync_outbox (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        owner_user_id TEXT NOT NULL,
+                        event_id TEXT NOT NULL,
+                        event_type TEXT NOT NULL,
+                        payload_json TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        attempts INTEGER NOT NULL DEFAULT 0,
+                        lease_until_ms INTEGER,
+                        last_error TEXT,
+                        created_at_ms INTEGER NOT NULL,
+                        updated_at_ms INTEGER NOT NULL,
+                        UNIQUE (owner_user_id, event_id)
+                    )
+                    """
+                )
+            )
+
+    def _insert_outbox(
+        self,
+        session: Session,
+        *,
+        event_id: str,
+        event_type: str,
+        payload: dict[str, Any],
+        now_ms: int,
+    ) -> bool:
+        if self._engine.dialect.name != "sqlite":
+            # The signal row is already the durable Postgres write. This mirror
+            # queue exists only for the SQLite-to-cloud worker.
+            return False
+        result = session.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO cloud_sync_outbox (
+                    owner_user_id, event_id, event_type, payload_json, status,
+                    attempts, created_at_ms, updated_at_ms
+                ) VALUES (
+                    :owner, :event_id, :event_type, :payload, 'PENDING',
+                    0, :now_ms, :now_ms
+                )
+                """
+            ),
+            {
+                "owner": str(self._owner),
+                "event_id": event_id,
+                "event_type": event_type,
+                "payload": json.dumps(payload, sort_keys=True, default=str),
+                "now_ms": int(now_ms),
+            },
+        )
+        return int(result.rowcount or 0) > 0
+
+    def _require_sqlite_outbox(self) -> None:
+        if self.outbox_backend() != "sqlite":
+            raise SignalHistoryStoreError(
+                "outbox_not_applicable_signal_history_is_authoritative"
+            )
+
+    def _mark_outbox(
+        self, *, event_id: str, status: str, now_ms: int, error: str | None
+    ) -> None:
+        self._require_sqlite_outbox()
+        with self._lock:
+            session = self._session()
+            try:
+                session.execute(
+                    text(
+                        """
+                        UPDATE cloud_sync_outbox
+                        SET status = :status, last_error = :error, updated_at_ms = :now,
+                            lease_until_ms = NULL
+                        WHERE owner_user_id = :owner AND event_id = :event_id
+                        """
+                    ),
+                    {
+                        "status": status,
+                        "error": (error or "")[:500],
+                        "now": int(now_ms),
+                        "owner": str(self._owner),
+                        "event_id": event_id,
+                    },
+                )
+                session.commit()
+            except SQLAlchemyError as exc:
+                session.rollback()
+                raise SignalHistoryStoreError(f"outbox_mark_failed:{type(exc).__name__}") from exc
+            finally:
+                session.close()
+
+    def outbox_backend(self) -> str:
+        """SQLite keeps a mirror queue. Postgres signal_history is the durable row."""
+        if self._engine.dialect.name == "sqlite":
+            return "sqlite"
+        return "not_applicable"
+
     def enqueue_cloud_outbox(
         self,
         *,
@@ -660,39 +771,171 @@ class SignalHistoryStore:
         payload: dict[str, Any],
         now_ms: int,
     ) -> bool:
-        del event_id, event_type, payload, now_ms
-        return False
+        if self.outbox_backend() != "sqlite":
+            raise SignalHistoryStoreError(
+                "outbox_not_applicable_signal_history_is_authoritative"
+            )
+        with self._lock:
+            session = self._session()
+            try:
+                inserted = self._insert_outbox(
+                    session,
+                    event_id=event_id,
+                    event_type=event_type,
+                    payload=payload,
+                    now_ms=now_ms,
+                )
+                session.commit()
+                return inserted
+            except SQLAlchemyError as exc:
+                session.rollback()
+                raise SignalHistoryStoreError(f"outbox_enqueue_failed:{type(exc).__name__}") from exc
+            finally:
+                session.close()
 
     def outbox_stats(self) -> dict[str, Any]:
+        counts = {
+            "PENDING": 0,
+            "IN_PROGRESS": 0,
+            "RETRY_WAIT": 0,
+            "FAILED": 0,
+            "PERMANENT_FAILURE": 0,
+            "SYNCED": 0,
+        }
+        if self._engine.dialect.name == "sqlite":
+            with self._lock:
+                session = self._session()
+                try:
+                    rows = session.execute(
+                        text(
+                            "SELECT status, COUNT(*) AS n FROM cloud_sync_outbox "
+                            "WHERE owner_user_id = :owner GROUP BY status"
+                        ),
+                        {"owner": str(self._owner)},
+                    ).all()
+                    for status, count in rows:
+                        counts[str(status)] = int(count)
+                except SQLAlchemyError:
+                    session.rollback()
+                finally:
+                    session.close()
         return {
-            "pending": 0,
-            "in_progress": 0,
-            "retry_wait": 0,
-            "failed": 0,
-            "permanent_failure": 0,
-            "synced": 0,
-            "by_status": {},
+            "pending": counts["PENDING"],
+            "in_progress": counts["IN_PROGRESS"],
+            "retry_wait": counts["RETRY_WAIT"],
+            "failed": counts["FAILED"],
+            "permanent_failure": counts["PERMANENT_FAILURE"],
+            "synced": counts["SYNCED"],
+            "by_status": counts,
             "last_synced_at_ms": None,
             "cloud_confirmed_only_when_synced": True,
-            "note": "SQLite outbox retired; Supabase SoT writes apply directly when gated on.",
+            "note": (
+                "SQLite outbox is a mirror queue. Postgres signal_history is authoritative "
+                "and has no second outbox. SYNCED is set only after cloud commit."
+            ),
+            "backend": self.outbox_backend(),
         }
 
     def recover_stale_in_progress(self, *, now_ms: int) -> int:
-        del now_ms
-        return 0
+        self._require_sqlite_outbox()
+        with self._lock:
+            session = self._session()
+            try:
+                result = session.execute(
+                    text(
+                        "UPDATE cloud_sync_outbox SET status = 'PENDING', lease_until_ms = NULL, "
+                        "updated_at_ms = :now WHERE owner_user_id = :owner AND status = 'IN_PROGRESS' "
+                        "AND lease_until_ms IS NOT NULL AND lease_until_ms < :now"
+                    ),
+                    {"owner": str(self._owner), "now": int(now_ms)},
+                )
+                session.commit()
+                return int(result.rowcount or 0)
+            except SQLAlchemyError:
+                session.rollback()
+                return 0
+            finally:
+                session.close()
 
     def claim_outbox_batch(
         self, *, now_ms: int, limit: int = 25, lease_ms: int = 60_000
     ) -> list[dict[str, Any]]:
-        del now_ms, limit, lease_ms
-        return []
+        self._require_sqlite_outbox()
+        owner = str(self._owner)
+        until = int(now_ms) + int(lease_ms)
+        with self._lock:
+            session = self._session()
+            try:
+                ids = session.execute(
+                    text(
+                        "SELECT id FROM cloud_sync_outbox WHERE owner_user_id = :owner "
+                        "AND status IN ('PENDING', 'RETRY_WAIT') "
+                        "ORDER BY id ASC LIMIT :limit"
+                    ),
+                    {"owner": owner, "limit": int(limit)},
+                ).scalars().all()
+                if not ids:
+                    return []
+                session.execute(
+                    text(
+                        "UPDATE cloud_sync_outbox SET status = 'IN_PROGRESS', "
+                        "lease_until_ms = :until, attempts = attempts + 1, updated_at_ms = :now "
+                        "WHERE id IN :ids"
+                    ).bindparams(bindparam("ids", expanding=True)),
+                    {"until": until, "now": int(now_ms), "ids": list(ids)},
+                )
+                rows = session.execute(
+                    text(
+                        "SELECT event_id, event_type, payload_json, attempts FROM cloud_sync_outbox "
+                        "WHERE id IN :ids"
+                    ).bindparams(bindparam("ids", expanding=True)),
+                    {"ids": list(ids)},
+                ).all()
+                session.commit()
+            except SQLAlchemyError:
+                session.rollback()
+                return []
+            finally:
+                session.close()
+        claimed: list[dict[str, Any]] = []
+        for event_id, event_type, payload_json, attempts in rows:
+            try:
+                payload = json.loads(payload_json or "{}")
+            except json.JSONDecodeError:
+                payload = {}
+            claimed.append(
+                {
+                    "event_id": event_id,
+                    "event_type": event_type,
+                    "payload": payload,
+                    "attempts": int(attempts or 0),
+                }
+            )
+        return claimed
 
     def list_outbox_pending(self, *, now_ms: int, limit: int = 50) -> list[dict[str, Any]]:
-        del now_ms, limit
-        return []
+        del now_ms
+        self._require_sqlite_outbox()
+        with self._lock:
+            session = self._session()
+            try:
+                rows = session.execute(
+                    text(
+                        "SELECT event_id, event_type, payload_json FROM cloud_sync_outbox "
+                        "WHERE owner_user_id = :owner AND status = 'PENDING' "
+                        "ORDER BY id ASC LIMIT :limit"
+                    ),
+                    {"owner": str(self._owner), "limit": int(limit)},
+                ).all()
+            finally:
+                session.close()
+        return [
+            {"event_id": event_id, "event_type": event_type, "payload_json": payload}
+            for event_id, event_type, payload in rows
+        ]
 
     def mark_outbox_synced(self, *, event_id: str, now_ms: int) -> None:
-        del event_id, now_ms
+        self._mark_outbox(event_id=event_id, status="SYNCED", now_ms=now_ms, error=None)
 
     def mark_outbox_failed(
         self,
@@ -703,7 +946,13 @@ class SignalHistoryStore:
         backoff_ms: int,
         permanent: bool = False,
     ) -> None:
-        del event_id, error, now_ms, backoff_ms, permanent
+        del backoff_ms
+        self._mark_outbox(
+            event_id=event_id,
+            status="PERMANENT_FAILURE" if permanent else "RETRY_WAIT",
+            now_ms=now_ms,
+            error=error,
+        )
 
     def recent_audit(self, *, limit: int = 20) -> list[dict[str, Any]]:
         limit = max(1, min(int(limit), 100))

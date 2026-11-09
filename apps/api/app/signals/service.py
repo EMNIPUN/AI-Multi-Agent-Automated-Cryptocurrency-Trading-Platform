@@ -28,7 +28,28 @@ _pipeline: SignalPipeline | None = None
 def get_signal_store() -> SignalHistoryStore:
     global _store
     if _store is None:
-        _store = SignalHistoryStore(resolve_signal_db_path())
+        try:
+            _store = SignalHistoryStore(resolve_signal_db_path())
+        except RuntimeError as exc:
+            message = str(exc)
+            if (
+                "signal_cloud_owner_user_id_unset" in message
+                or "cryptonova_test_owner_user_id_invalid_uuid" in message
+            ):
+                from fastapi import HTTPException
+
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "signal_owner_unconfigured",
+                        "message": (
+                            "Signal persistence has no authenticated owner and no approved "
+                            "operator binding. No owner id was invented."
+                        ),
+                        "execution_allowed": False,
+                    },
+                ) from None
+            raise
     return _store
 
 

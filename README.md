@@ -1,6 +1,6 @@
 # AI Multi-Agent Automated Cryptocurrency Trading Platform
 
-Research-first trading platform built around Bybit. Current codebase is an interactive terminal app for **spot** and **USDT perpetual futures**, plus a **rule-based automated agent** (EMA + RSI) with risk controls. Multi-agent FastAPI / Next.js services are planned next.
+Research-first trading platform built around Bybit. The **product path** is CryptoNova’s multi-agent `SignalPipeline` (market → trend → momentum → volume → structure → regime → risk) with autonomous **PAPER** place/track/close via the paper supervisor, FastAPI + Next.js ops desk (`/autonomy`), and a gated **TESTNET** execution bridge. **LIVE** mainnet orders stay locked. A legacy terminal + EMA/RSI `run_agent.py` path remains for research.
 
 ## Features
 
