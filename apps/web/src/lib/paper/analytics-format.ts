@@ -63,8 +63,8 @@ export function signedMoneyClass(value: string | null | undefined): string {
   try {
     const n = Number(value);
     if (!Number.isFinite(n) || n === 0) return "font-mono";
-    if (n > 0) return "font-mono text-emerald-400";
-    return "font-mono text-rose-400";
+    if (n > 0) return "font-mono text-profit";
+    return "font-mono text-loss";
   } catch {
     return "font-mono";
   }

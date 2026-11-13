@@ -69,7 +69,7 @@ export function FeatureShowcase() {
                 )}
               >
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-orange-300/80">
+                  <p className="text-xs uppercase tracking-[0.18em] text-brand">
                     0{i + 1} · Feature
                   </p>
                   <h3 className="mt-2 font-display text-2xl tracking-tight md:text-3xl">
@@ -133,13 +133,13 @@ export function StatsBand() {
           <p className="mt-2 text-sm text-muted-foreground">Markets watched in public streams</p>
         </BlurFade>
         <BlurFade delay={0.08}>
-          <p className="text-metallic text-4xl font-medium tracking-tight text-emerald-300">
+          <p className="text-metallic text-4xl font-medium tracking-tight text-profit">
             <NumberTicker value={3} decimalPlaces={0} />
           </p>
           <p className="mt-2 text-sm text-muted-foreground">Specialist agents per trading loop</p>
         </BlurFade>
         <BlurFade delay={0.14}>
-          <p className="text-metallic text-4xl font-medium tracking-tight text-orange-300">0</p>
+          <p className="text-metallic text-4xl font-medium tracking-tight text-brand">0</p>
           <p className="mt-2 text-sm text-muted-foreground">Live orders until you unlock gates</p>
         </BlurFade>
       </div>

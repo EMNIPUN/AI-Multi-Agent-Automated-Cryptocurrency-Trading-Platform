@@ -16,7 +16,6 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { CryptoNovaMark } from "@/components/brand/CryptoNovaLogo";
 import { CommandPalette, CommandPaletteTrigger } from "@/components/layout/CommandPalette";
-import { StatusBadge } from "@/components/design-system";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -47,7 +46,7 @@ export function AppTopbar() {
 
   return (
     <>
-      <header className="app-topbar z-40 flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background/85 px-3 md:px-5">
+      <header className="app-topbar z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background/90 px-3 md:px-6">
         <div className="flex min-w-0 items-center gap-2">
           <SidebarTrigger className="-ml-1" />
           <Link
@@ -70,8 +69,6 @@ export function AppTopbar() {
 
         <div className="flex items-center gap-1.5">
           <CommandPaletteTrigger onOpen={() => setPaletteOpen(true)} />
-          <StatusBadge label="PAPER" tone="paper" className="hidden lg:inline-flex" />
-          <StatusBadge label="LIVE locked" tone="live" className="hidden lg:inline-flex" />
           <Button variant="ghost" size="icon" asChild aria-label="Notifications">
             <Link href="/notifications">
               <Bell className="h-4 w-4" />

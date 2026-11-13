@@ -54,7 +54,7 @@ function toneClass(tone: ParsedReply["chips"][number]["tone"]) {
     case "warn":
       return "border-brand/40 bg-brand/10 text-foreground";
     case "danger":
-      return "border-rose-400/40 bg-rose-400/10 text-destructive";
+      return "border-destructive/40 bg-destructive/10 text-destructive";
     default:
       return "border-border bg-muted text-muted-foreground";
   }
@@ -175,7 +175,7 @@ function parseFromText(text: string, payload?: ReplyPayload): ParsedReply {
 
 function ReplyIcon({ headline }: { headline: string }) {
   if (/halt|emergency|blocked|failed|refused|error/i.test(headline)) {
-    return <AlertTriangle className="h-4 w-4 text-rose-300" aria-hidden />;
+    return <AlertTriangle className="h-4 w-4 text-destructive" aria-hidden />;
   }
   if (/pause|paused|stopped|disabled|off\b/i.test(headline)) {
     return <CirclePause className="h-4 w-4 text-brand" aria-hidden />;

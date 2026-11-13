@@ -66,14 +66,20 @@ export function OrchestratorStatusStrip({
         variant="outline"
         className={cn(
           "rounded-full font-mono text-[11px]",
-          chatMode === "LIVE"
-            ? "border-rose-400/50 bg-rose-400/15 text-destructive"
-            : liveArmed
-              ? "border-rose-400/30 bg-rose-400/5 text-foreground"
-              : "border-border bg-muted text-muted-foreground",
+          chatMode === "LIVE" && liveArmed
+            ? "border-execution-live/50 bg-execution-live/15 text-foreground"
+            : chatMode === "LIVE"
+              ? "border-execution-blocked/40 bg-muted text-muted-foreground"
+              : liveArmed
+                ? "border-execution-live/30 bg-execution-live/5 text-foreground"
+                : "border-border bg-muted text-muted-foreground",
         )}
       >
-        {chatMode === "LIVE" ? "LIVE · ACTIVE" : liveLabel}
+        {chatMode === "LIVE" && liveArmed
+          ? "LIVE · approval required"
+          : chatMode === "LIVE"
+            ? "LIVE · blocked"
+            : liveLabel}
       </Badge>
 
       <span className="hidden h-4 w-px bg-border sm:block" aria-hidden />

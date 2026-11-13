@@ -44,6 +44,9 @@ export type ChatTurn = {
     toolNames?: string[];
     openaiCalled?: boolean;
     error?: string | null;
+    model?: string | null;
+    orchestrationMode?: string | null;
+    usedFallback?: boolean;
   };
 };
 
@@ -77,6 +80,8 @@ const SUGGESTIONS: {
     mode: "both",
   },
   { text: "Summarize paper equity and open positions.", label: "Paper equity", mode: "paper" },
+  { text: "Explain the last trading decision.", label: "Explain decision", mode: "paper" },
+  { text: "Why didn't the system open a position?", label: "Why HOLD?", mode: "paper" },
   { text: "Show the live-readiness checklist.", label: "Live checklist", mode: "live" },
 ];
 

@@ -27,9 +27,9 @@ export function RecentTradesFeed({ trades }: { trades: PublicTradeView[] }) {
             <span
               className={cn(
                 t.side === "Buy"
-                  ? "text-emerald-400"
+                  ? "text-profit"
                   : t.side === "Sell"
-                    ? "text-rose-400"
+                    ? "text-loss"
                     : "text-foreground",
               )}
             >

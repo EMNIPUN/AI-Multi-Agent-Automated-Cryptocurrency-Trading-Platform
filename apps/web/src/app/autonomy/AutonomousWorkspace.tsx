@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Activity, ArrowRight, Bot, CircleStop, Clock3, LockKeyhole, Pause, Play, Radio, RefreshCw, ShieldCheck, ShieldOff } from "lucide-react";
 
-import { MetricGrid, MetricTile, PageFrame, SectionPanel } from "@/components/command-center";
+import { MetricGrid, MetricTile, SectionPanel } from "@/components/command-center";
+import { OperationsTemplate } from "@/components/design-system/templates";
 import { StatusBadge } from "@/components/design-system";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -152,10 +153,10 @@ export function AutonomousWorkspace() {
   const startVisible = state === "STOPPED" || state === "UNKNOWN";
 
   return (
-    <PageFrame
+    <OperationsTemplate
       eyebrow="Autonomous operations" title="Trading control center"
       description="Authorize a bounded paper session. Follow the agents, inspect each decision, and track every position through its exit."
-      modes={["paper", "live"]}
+      modes={["paper"]}
       actions={<><Button variant="outline" size="sm" disabled={refreshing || !!pending} onClick={() => void load()}><RefreshCw className={cn("mr-2 size-3.5", refreshing && "animate-spin")} />Refresh</Button><Button variant="outline" size="sm" asChild><Link href="/orchestrator"><Bot className="mr-2 size-3.5" />Open chat</Link></Button></>}
     >
       <div role="status" aria-live="polite" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-muted/30 px-4 py-3">
@@ -165,7 +166,7 @@ export function AutonomousWorkspace() {
           <span className="text-muted-foreground">Refreshes every 8s · {updatedAt ? `last received ${formatTime(updatedAt)}` : "awaiting first snapshot"}</span>
           <StatusBadge label="PAPER" tone="paper" />
           <StatusBadge label="TESTNET gated" tone="neutral" />
-          <StatusBadge label="LIVE locked" tone="live" />
+          <StatusBadge label="LIVE gated" tone="live" />
         </div>
         <StatusBadge label={status ? state : "CONNECTING"} tone={state === "RUNNING" ? "ok" : state === "HALTED" || state === "ERROR" ? "danger" : "neutral"} />
       </div>
@@ -236,7 +237,7 @@ export function AutonomousWorkspace() {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><p className="max-w-3xl text-xs leading-relaxed text-muted-foreground">Signals and consensus scores express model agreement, not a calibrated chance of profit. Paper results exclude unsupported futures mechanics. Validate on unseen market data and realistic costs before considering live execution.</p><Link href="/backtesting" className="inline-flex items-center gap-1.5 text-xs font-medium text-brand">Validate strategies<ArrowRight className="size-3.5" /></Link></div>
         </SectionPanel>
       </>}
-    </PageFrame>
+    </OperationsTemplate>
   );
 }
 

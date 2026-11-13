@@ -61,7 +61,7 @@ export function PublicTickerStrip() {
                 </div>
                 <div
                   className={`text-[10px] ${
-                    pct == null ? "text-muted-foreground" : pct >= 0 ? "text-emerald-400" : "text-rose-400"
+                    pct == null ? "text-muted-foreground" : pct >= 0 ? "text-profit" : "text-loss"
                   }`}
                 >
                   {pct == null ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`}

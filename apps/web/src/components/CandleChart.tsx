@@ -119,7 +119,7 @@ export function CandleChart({
       }
     >
       {sample ? (
-        <div className="absolute right-2 top-2 z-10 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-mono text-[10px] text-amber-400">
+        <div className="absolute right-2 top-2 z-10 rounded border border-warning/40 bg-warning/10 px-2 py-0.5 font-mono text-[10px] text-warning">
           SAMPLE CHART
         </div>
       ) : null}

@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { AppShell } from "@/components/layout/AppShell";
+import { ThemeSync } from "@/components/layout/ThemeSync";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -37,11 +38,21 @@ export const metadata: Metadata = {
   },
 };
 
+const THEME_BOOT = `(function(){try{var t=localStorage.getItem("cryptonova.theme.v3");var light=t==="light";var d=document.documentElement;d.classList.toggle("light",light);d.classList.toggle("dark",!light);var n=localStorage.getItem("cryptonova.density.v1");if(n==="compact"||n==="comfortable")d.dataset.density=n;}catch(e){}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`light ${display.variable} ${sans.variable} ${mono.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`dark ${display.variable} ${sans.variable} ${mono.variable}`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+      </head>
       <body className="font-sans antialiased">
         <TooltipProvider>
+          <ThemeSync />
           <AuthProvider>
             <AppShell>{children}</AppShell>
             <Toaster richColors closeButton position="top-right" />

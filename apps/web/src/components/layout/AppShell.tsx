@@ -38,8 +38,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main
           className={
             chatFillPage
-              ? "mx-auto flex w-full min-h-0 min-w-0 max-w-[1480px] flex-1 flex-col overflow-hidden px-3 py-2 md:px-5"
-              : "mx-auto flex w-full min-h-0 min-w-0 max-w-[1480px] flex-1 flex-col overflow-y-auto px-3 py-3 md:px-5 md:py-4"
+              ? "mx-auto flex w-full min-h-0 min-w-0 max-w-[1480px] flex-1 flex-col overflow-hidden px-3 py-2 md:px-6"
+              : "mx-auto flex w-full min-h-0 min-w-0 max-w-[1480px] flex-1 flex-col overflow-y-auto px-4 py-4 md:px-6 md:py-5"
           }
         >
           <RequireAuth>

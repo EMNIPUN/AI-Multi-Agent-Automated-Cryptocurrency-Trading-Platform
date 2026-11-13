@@ -1,17 +1,17 @@
 "use client";
 
-import { PageFrame } from "@/components/command-center";
+import { ResearchTemplate } from "@/components/design-system/templates";
 
 import { NewsDashboard } from "./NewsDashboard";
 
 export default function NewsPage() {
   return (
-    <PageFrame
+    <ResearchTemplate
       title="News Intelligence"
       description="Market headlines and alerts for research — never trading authority."
-      modes={["readonly", "live"]}
+      modes={["readonly"]}
     >
       <NewsDashboard />
-    </PageFrame>
+    </ResearchTemplate>
   );
 }

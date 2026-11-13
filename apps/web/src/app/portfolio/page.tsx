@@ -1,7 +1,8 @@
 "use client";
 
 import { WalletBalancePanel } from "@/components/WalletBalancePanel";
-import { PageFrame, SectionPanel } from "@/components/command-center";
+import { SectionPanel } from "@/components/command-center";
+import { OverviewTemplate } from "@/components/design-system/templates";
 import { BlurFade } from "@/components/magicui/blur-fade";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
 import {
@@ -14,10 +15,10 @@ import { Separator } from "@/components/ui/separator";
 
 export default function PortfolioPage() {
   return (
-    <PageFrame
+    <OverviewTemplate
       title="Portfolio"
       description="Live Bybit UNIFIED wallet via the server-side read adapter. Allocation shares are computed only from returned coin equity — nothing is invented."
-      modes={["readonly", "live"]}
+      modes={["readonly"]}
     >
       <DataModeBanner
         mode="demo"
@@ -77,6 +78,6 @@ export default function PortfolioPage() {
           <WalletBalancePanel />
         </SectionPanel>
       </div>
-    </PageFrame>
+    </OverviewTemplate>
   );
 }

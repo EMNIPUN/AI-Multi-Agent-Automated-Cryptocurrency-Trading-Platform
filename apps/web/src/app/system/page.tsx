@@ -7,9 +7,9 @@ import { RefreshCw } from "lucide-react";
 import {
   MetricGrid,
   MetricTile,
-  PageFrame,
   SectionPanel,
 } from "@/components/command-center";
+import { OverviewTemplate } from "@/components/design-system/templates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -107,10 +107,10 @@ export default function SystemHealthPage() {
   const total = probes.length;
 
   return (
-    <PageFrame
+    <OverviewTemplate
       title="System Health"
       description="Read-only aggregate of local loopback adapters. No schema changes and no live trading unlock."
-      modes={["readonly", "live"]}
+      modes={["readonly"]}
       actions={
         <Button
           type="button"
@@ -149,7 +149,6 @@ export default function SystemHealthPage() {
       <SectionPanel
         title="Adapter status"
         description="Honest reachability from existing status endpoints."
-        beam
       >
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -185,6 +184,6 @@ export default function SystemHealthPage() {
           </div>
         )}
       </SectionPanel>
-    </PageFrame>
+    </OverviewTemplate>
   );
 }

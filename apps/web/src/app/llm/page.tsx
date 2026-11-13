@@ -1,17 +1,17 @@
 "use client";
 
-import { PageFrame } from "@/components/command-center";
+import { AiWorkspaceTemplate } from "@/components/design-system/templates";
 
 import { LlmDashboard } from "./LlmDashboard";
 
 export default function LlmPage() {
   return (
-    <PageFrame
+    <AiWorkspaceTemplate
       title="LLM Intelligence"
       description="Advisory LLM evaluations and reports. Never directs live execution."
-      modes={["readonly", "live"]}
+      modes={["readonly"]}
     >
       <LlmDashboard />
-    </PageFrame>
+    </AiWorkspaceTemplate>
   );
 }

@@ -15,7 +15,7 @@ import {
 
 import { LogoLoader } from "@/components/brand/LogoLoader";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
-import { PageFrame } from "@/components/command-center";
+import { ResearchTemplate } from "@/components/design-system/templates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -328,12 +328,12 @@ export function AnalyticsDashboard() {
   }
 
   return (
-    <PageFrame
+    <ResearchTemplate
       title="Performance Analytics"
       description="Read-only performance from the local paper journal. Fees already netted into realized PnL."
-      modes={["paper", "readonly", "live"]}
+      modes={["paper", "readonly"]}
     >
-      <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm font-medium">
+      <div className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
         {PAPER_ONLY}
       </div>
 
@@ -368,7 +368,7 @@ export function AnalyticsDashboard() {
       ) : null}
 
       {error && error !== "paper_db_missing" && mode !== "disabled" ? (
-        <Card className="mb-4 border-rose-500/40">
+        <Card className="mb-4 border-destructive/40">
           <CardHeader>
             <CardTitle className="text-base">Analytics request failed</CardTitle>
             <CardDescription className="font-mono text-xs">{error}</CardDescription>
@@ -514,7 +514,7 @@ export function AnalyticsDashboard() {
                 </Button>
               </div>
               {filterError ? (
-                <p className="text-sm text-rose-400 md:col-span-3">{filterError}</p>
+                <p className="text-sm text-destructive md:col-span-3">{filterError}</p>
               ) : null}
               <div className="md:col-span-3 flex flex-wrap gap-2 text-xs">
                 <Badge variant="outline">{refreshing ? "Refreshing…" : "Read-only"}</Badge>
@@ -886,6 +886,6 @@ export function AnalyticsDashboard() {
           ) : null}
         </>
       ) : null}
-    </PageFrame>
+    </ResearchTemplate>
   );
 }

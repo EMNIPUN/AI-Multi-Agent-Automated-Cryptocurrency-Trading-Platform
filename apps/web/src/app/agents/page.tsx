@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 
-import { PageFrame, SectionPanel } from "@/components/command-center";
+import { SectionPanel } from "@/components/command-center";
+import { AiWorkspaceTemplate } from "@/components/design-system/templates";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,10 +11,10 @@ import { AGENT_REGISTRY } from "@/lib/agents/registry";
 
 export default function AgentsPage() {
   return (
-    <PageFrame
+    <AiWorkspaceTemplate
       title="Agent Workspace"
       description="Shared registry aligned with the SignalPipeline spine. Live contributions appear on Autonomous Trading and Live AI Analysis."
-      modes={["readonly", "paper", "live"]}
+      modes={["readonly", "paper"]}
       actions={
         <Button asChild variant="secondary" className="rounded-full">
           <Link href="/autonomy">Open Autonomous Trading</Link>
@@ -57,6 +58,6 @@ export default function AgentsPage() {
           </Button>
         </div>
       </SectionPanel>
-    </PageFrame>
+    </AiWorkspaceTemplate>
   );
 }

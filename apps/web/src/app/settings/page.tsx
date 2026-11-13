@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { PageFrame } from "@/components/command-center";
+import { SettingsTemplate } from "@/components/design-system/templates";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
 import { Badge } from "@/components/ui/badge";
@@ -24,10 +24,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <PageFrame
+    <SettingsTemplate
       title="Settings"
       description="Appearance, session, and connection health. Frontend settings never bypass backend gates."
-      modes={["readonly", "live"]}
+      modes={["readonly"]}
     >
       <DataModeBanner
         mode="demo"
@@ -167,6 +167,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
-    </PageFrame>
+    </SettingsTemplate>
   );
 }

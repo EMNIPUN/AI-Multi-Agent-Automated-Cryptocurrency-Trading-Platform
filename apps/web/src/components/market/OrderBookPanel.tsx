@@ -61,11 +61,11 @@ export function OrderBookPanel({ book }: { book: OrderBookView | null }) {
             {a.size != null ? (
               <span
                 aria-hidden
-                className="absolute inset-y-0 right-0 rounded-sm bg-rose-500/15"
+                className="absolute inset-y-0 right-0 rounded-sm bg-loss/15"
                 style={{ width: `${depthPct(a.size, maxAsk)}%` }}
               />
             ) : null}
-            <span className="relative text-rose-400 tabular-nums">
+            <span className="relative text-loss tabular-nums">
               {a.price != null
                 ? a.price.toLocaleString(undefined, { maximumFractionDigits: 4 })
                 : "—"}
@@ -97,11 +97,11 @@ export function OrderBookPanel({ book }: { book: OrderBookView | null }) {
             {b.size != null ? (
               <span
                 aria-hidden
-                className="absolute inset-y-0 right-0 rounded-sm bg-emerald-500/15"
+                className="absolute inset-y-0 right-0 rounded-sm bg-profit/15"
                 style={{ width: `${depthPct(b.size, maxBid)}%` }}
               />
             ) : null}
-            <span className="relative text-emerald-400 tabular-nums">
+            <span className="relative text-profit tabular-nums">
               {b.price != null
                 ? b.price.toLocaleString(undefined, { maximumFractionDigits: 4 })
                 : "—"}

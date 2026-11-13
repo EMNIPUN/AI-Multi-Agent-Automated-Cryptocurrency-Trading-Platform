@@ -15,9 +15,9 @@ import {
 import { Filter, RotateCcw, ShieldAlert } from "lucide-react";
 
 import { LogoLoader } from "@/components/brand/LogoLoader";
+import { ResearchTemplate } from "@/components/design-system/templates";
 import { CodeComparison } from "@/components/magicui/code-comparison";
 import { Marquee } from "@/components/magicui/marquee";
-import { Ripple } from "@/components/magicui/ripple";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -319,38 +319,21 @@ export function BacktestingDashboard() {
   }
 
   return (
-    <div className="w-full min-w-0 max-w-full space-y-6 overflow-x-hidden">
-      {/* Hero — one composition */}
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-b from-zinc-950 via-black to-black px-5 py-8 md:px-8 md:py-10">
-        <Ripple className="opacity-30" mainCircleSize={90} numCircles={5} />
-        <div className="relative z-10 max-w-3xl">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-orange-300/75">
-            Research & Intelligence
-          </p>
-          <h1 className="mt-2 text-3xl font-medium tracking-tight text-foreground md:text-4xl">
-            Backtesting
-          </h1>
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-foreground">
-            Configure and run historical multi-agent simulations, then inspect saved reports.
-            Live trading stays off — runs require an explicit click and a separate feature gate.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Badge className="border-amber-400/30 bg-amber-400/10 text-amber-100">
-              Historical simulation
-            </Badge>
-            <Badge variant="outline">Read-only</Badge>
-            <Badge variant="outline">Live trading off</Badge>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-3 text-sm">
-            <Link href="/analytics" className="text-foreground underline-offset-4 hover:text-foreground hover:underline">
-              Paper analytics
-            </Link>
-            <Link href="/agents/live" className="text-foreground underline-offset-4 hover:text-foreground hover:underline">
-              Agent Studio
-            </Link>
-          </div>
+    <ResearchTemplate
+      title="Backtesting Lab"
+      description="Configure and run historical multi-agent simulations, then inspect saved reports. A run starts only from an explicit action."
+      modes={["readonly"]}
+      actions={
+        <div className="flex flex-wrap gap-3 text-sm">
+          <Link href="/analytics" className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+            Paper analytics
+          </Link>
+          <Link href="/agents/live" className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+            Agent Studio
+          </Link>
         </div>
-      </section>
+      }
+    >
 
       <Marquee pauseOnHover className="min-w-0 overflow-hidden rounded-xl border border-border bg-muted/30 [--duration:28s]">
         {[
@@ -1075,6 +1058,6 @@ export function BacktestingDashboard() {
           </TabsContent>
         </Tabs>
       ) : null}
-    </div>
+    </ResearchTemplate>
   );
 }

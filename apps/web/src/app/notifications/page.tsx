@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { LogoLoader } from "@/components/brand/LogoLoader";
-import { PageFrame } from "@/components/command-center";
+import { SettingsTemplate } from "@/components/design-system/templates";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,10 +98,10 @@ export default function NotificationsPage() {
   }
 
   return (
-    <PageFrame
+    <SettingsTemplate
       title="Notifications"
       description="Agent, risk, and reconciliation alerts derived from the current snapshot. Duplicate event IDs are dropped."
-      modes={["readonly", "live"]}
+      modes={["readonly"]}
     >
       <DataModeBanner
         mode={mode}
@@ -143,6 +143,6 @@ export default function NotificationsPage() {
           })}
         </div>
       )}
-    </PageFrame>
+    </SettingsTemplate>
   );
 }

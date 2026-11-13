@@ -84,7 +84,7 @@ export function GlobalStatusBar({ className }: { className?: string }) {
         tone={testnetArmed ? "ok" : "neutral"}
       />
       <StatusBadge
-        label={liveArmed ? "LIVE · Approve/order" : "LIVE off"}
+        label={liveArmed ? "LIVE approval required" : "LIVE off"}
         tone={liveArmed ? "live" : "neutral"}
       />
       {liveArmed ? (

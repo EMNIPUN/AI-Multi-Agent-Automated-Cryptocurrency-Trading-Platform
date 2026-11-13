@@ -17,15 +17,11 @@ import {
   AgentStatusList,
   MetricGrid,
   MetricTile,
-  ModeBadge,
-  PageFrame,
   SectionPanel,
 } from "@/components/command-center";
-import { BlurFade } from "@/components/magicui/blur-fade";
-import { NumberTicker } from "@/components/magicui/number-ticker";
-import { Ripple } from "@/components/magicui/ripple";
+import { ExecutionMode, OverviewTemplate, RiskIndicator } from "@/components/design-system";
 import { NewsAlertStrip } from "@/components/news/NewsAlertStrip";
-import { Badge } from "@/components/ui/badge";
+import { NumberTicker } from "@/components/magicui/number-ticker";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { agentsForStatusList } from "@/lib/agents/registry";
@@ -58,7 +54,7 @@ const QUICK_LINKS = [
   },
   {
     href: "/agents/live",
-    title: "Live AI Analysis",
+    title: "Live Market Analysis",
     detail: "Multi-agent studio & signals",
     icon: Activity,
   },
@@ -146,10 +142,10 @@ export function DashboardHome() {
   );
 
   return (
-    <PageFrame
+    <OverviewTemplate
       title="Overview"
-      description="Fleet overview for the advanced multi-agent control plane. Primary ops live on Autonomous Trading; LIVE stays locked."
-      modes={["readonly", "paper", "live"]}
+      description="Operator snapshot from the supervisor, paper journal, and risk feed. Nothing on this page submits an order."
+      modes={["readonly", "paper"]}
       actions={
         <Button asChild className="rounded-full" variant="secondary">
           <Link href="/autonomy">
@@ -161,37 +157,14 @@ export function DashboardHome() {
     >
       <NewsAlertStrip />
 
-      <BlurFade>
-        <section className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-zinc-950 via-black to-black px-5 py-7 md:px-8">
-          <Ripple className="opacity-20" mainCircleSize={80} numCircles={4} />
-          <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-brand">
-                AI Trading Command Center
-              </p>
-              <h2 className="mt-2 text-2xl font-medium tracking-tight text-foreground md:text-3xl">
-                Calibrated agents. Autonomous paper. Testnet gated.
-              </h2>
-              <p className="mt-2 text-sm text-foreground">
-                Strategy {strategyVersion}. Scores are historical agreement, not guaranteed edge.
-                LLM/news stay advisory. Nothing here places a live exchange order.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <ModeBadge mode="paper" />
-              <ModeBadge mode="live" />
-              <Badge variant="outline" className="rounded-full">
-                Supervisor {supervisor}
-              </Badge>
-              {halted ? (
-                <Badge variant="destructive" className="rounded-full">
-                  Risk halt
-                </Badge>
-              ) : null}
-            </div>
-          </div>
-        </section>
-      </BlurFade>
+      <div className="flex flex-wrap items-center gap-3">
+        <ExecutionMode mode="paper" />
+        <RiskIndicator
+          state={loading ? "unknown" : halted ? "halted" : "ok"}
+          reason={halted ? String(risk?.halt_reason || "Supervisor halt is active.") : undefined}
+        />
+        <span className="font-mono text-xs text-muted-foreground">Supervisor {supervisor}</span>
+      </div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -207,8 +180,8 @@ export function DashboardHome() {
               {orch?.enabled ? "on" : "off"}
             </span>
           </MetricTile>
-          <MetricTile label="Execution mode" hint="TESTNET gated · LIVE locked">
-            <span className="font-mono text-base">PAPER · TESTNET gated · LIVE locked</span>
+          <MetricTile label="Execution mode" hint="Runtime state is on the status bar">
+            <span className="font-mono text-base">PAPER · gates on the status bar</span>
           </MetricTile>
           <MetricTile label="Strategy" hint="Calibrated historical agreement only">
             <span className="font-mono text-base">{strategyVersion}</span>
@@ -237,7 +210,6 @@ export function DashboardHome() {
         <SectionPanel
           title="Desk readiness"
           description="Honest status from available read adapters — never invented balances."
-          beam
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-border bg-muted/50 p-4">
@@ -330,6 +302,6 @@ export function DashboardHome() {
           </Button>
         </div>
       </SectionPanel>
-    </PageFrame>
+    </OverviewTemplate>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { PositionsOrdersPanel } from "@/components/PositionsOrdersPanel";
-import { PageFrame, SectionPanel } from "@/components/command-center";
+import { SectionPanel } from "@/components/command-center";
+import { TradingTerminalTemplate } from "@/components/design-system/templates";
 import { BlurFade } from "@/components/magicui/blur-fade";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
 import {
@@ -14,10 +15,10 @@ import { Separator } from "@/components/ui/separator";
 
 export default function PositionsPage() {
   return (
-    <PageFrame
+    <TradingTerminalTemplate
       title="Positions"
       description="Read-only positions, open orders, and fills. Cancel and place controls are not part of this UI."
-      modes={["paper", "live", "readonly"]}
+      modes={["paper", "readonly"]}
     >
       <DataModeBanner
         mode="unavailable"
@@ -77,6 +78,6 @@ export default function PositionsPage() {
           <PositionsOrdersPanel />
         </SectionPanel>
       </div>
-    </PageFrame>
+    </TradingTerminalTemplate>
   );
 }

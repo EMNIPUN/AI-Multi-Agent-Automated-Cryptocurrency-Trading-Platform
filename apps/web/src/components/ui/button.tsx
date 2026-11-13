@@ -9,7 +9,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground shadow hover:bg-[hsl(var(--primary-hover))]",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
@@ -19,11 +19,11 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         /** @deprecated Use `brand` — kept as alias during UI 2.0 migration */
-        cyan: "rounded-full bg-primary text-primary-foreground shadow hover:brightness-105",
-        brand: "rounded-full bg-primary text-primary-foreground shadow hover:brightness-105",
-        pill: "rounded-full bg-primary text-primary-foreground shadow hover:brightness-105",
+        cyan: "rounded-full bg-primary text-primary-foreground shadow hover:bg-[hsl(var(--primary-hover))]",
+        brand: "rounded-full bg-primary text-primary-foreground shadow hover:bg-[hsl(var(--primary-hover))]",
+        pill: "rounded-full bg-primary text-primary-foreground shadow hover:bg-[hsl(var(--primary-hover))]",
         accent:
-          "rounded-full bg-brand text-primary-foreground shadow hover:brightness-105",
+          "rounded-full bg-primary text-primary-foreground shadow hover:bg-[hsl(var(--primary-hover))]",
       },
       size: {
         default: "h-9 px-4 py-2",

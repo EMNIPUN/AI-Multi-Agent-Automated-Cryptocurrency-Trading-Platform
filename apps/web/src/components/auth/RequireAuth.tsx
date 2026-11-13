@@ -46,8 +46,8 @@ export function RequireAuth({ children }: { children: ReactNode }) {
         <p className="font-display text-lg text-foreground">Auth is not configured</p>
         <p className="mt-2">
           Set{" "}
-          <span className="font-mono text-orange-300">NEXT_PUBLIC_SUPABASE_URL</span> and{" "}
-          <span className="font-mono text-orange-300">NEXT_PUBLIC_SUPABASE_ANON_KEY</span> to enable
+          <span className="font-mono text-brand">NEXT_PUBLIC_SUPABASE_URL</span> and{" "}
+          <span className="font-mono text-brand">NEXT_PUBLIC_SUPABASE_ANON_KEY</span> to enable
           sign-in.
         </p>
         <Button asChild variant="brand" className="mt-4">

@@ -111,7 +111,7 @@ export function AgentStudioHeader({
                 : "Watching markets & streaming evidence…"}
             </Shimmer>
           ) : projection.heartbeatStale || projection.dataMode === "unavailable" ? (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-orange-300/90">
+            <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-brand">
               <AlertTriangle className="h-3.5 w-3.5" />
               Evidence may be incomplete · last beat {age}
             </p>

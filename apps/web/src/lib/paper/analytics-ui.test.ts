@@ -46,8 +46,8 @@ describe("analytics formatting", () => {
     expect(tradeOutcome("1.5")).toBe("win");
     expect(tradeOutcome("-0.2")).toBe("loss");
     expect(tradeOutcome("0")).toBe("breakeven");
-    expect(signedMoneyClass("2")).toContain("emerald");
-    expect(signedMoneyClass("-2")).toContain("rose");
+    expect(signedMoneyClass("2")).toContain("text-profit");
+    expect(signedMoneyClass("-2")).toContain("text-loss");
   });
 });
 

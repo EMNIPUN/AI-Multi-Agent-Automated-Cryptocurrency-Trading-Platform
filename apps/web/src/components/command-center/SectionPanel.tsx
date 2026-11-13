@@ -22,7 +22,14 @@ export function SectionPanel({
 }) {
   return (
     <section className={cn("cn-panel flex flex-col p-5 md:p-6", className)}>
-      {beam ? <BorderBeam size={200} duration={14} colorFrom="#F7A600" colorTo="#FFCE6E" /> : null}
+      {beam ? (
+        <BorderBeam
+          size={200}
+          duration={14}
+          colorFrom="hsl(var(--primary))"
+          colorTo="hsl(var(--primary-hover))"
+        />
+      ) : null}
       {(title || actions) && (
         <div className="relative z-10 mb-4 flex shrink-0 flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">

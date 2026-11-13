@@ -27,8 +27,10 @@ import { NAV_GROUPS } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 function isActive(pathname: string, href: string) {
-  if (href === "/orchestrator") return pathname === "/orchestrator" || pathname === "/dashboard";
+  if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/orchestrator") return pathname === "/orchestrator";
   if (href === "/agents") return pathname === "/agents";
+  if (href === "/settings") return pathname === "/settings";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -159,11 +161,11 @@ export function AppSidebar() {
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="sample">SAMPLE-safe</Badge>
             <Badge variant="outline" className="rounded-full text-[10px]">
-              Trading off
+              Paper supervision
             </Badge>
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-            Orchestrator is paper-only. Live exchange orders stay locked.
+            A connected exchange key is not permission to trade.
           </p>
         </div>
       </SidebarFooter>

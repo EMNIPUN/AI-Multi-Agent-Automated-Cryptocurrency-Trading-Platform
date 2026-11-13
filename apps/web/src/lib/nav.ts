@@ -7,6 +7,7 @@ import {
   FlaskConical,
   HeartPulse,
   History,
+  LayoutDashboard,
   List,
   Newspaper,
   Settings,
@@ -21,10 +22,11 @@ export const NAV_GROUPS = [
   {
     label: "AI Command Center",
     items: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
       { href: "/orchestrator", label: "AI Orchestrator", icon: Bot },
       { href: "/autonomy", label: "Autonomous Trading", icon: ShieldCheck },
       { href: "/agents", label: "Agent Workspace", icon: Users },
-      { href: "/agents/live", label: "Live AI Analysis", icon: Activity },
+      { href: "/agents/live", label: "Live Market Analysis", icon: Activity },
       { href: "/llm", label: "LLM Intelligence", icon: Sparkles },
     ],
   },
@@ -34,7 +36,7 @@ export const NAV_GROUPS = [
       { href: "/markets", label: "Markets", icon: CandlestickChart },
       { href: "/portfolio", label: "Portfolio", icon: Wallet },
       { href: "/positions", label: "Positions & Orders", icon: List },
-      { href: "/paper", label: "Paper Trading", icon: FlaskConical },
+      { href: "/paper", label: "Autonomous Paper Trading", icon: FlaskConical },
       { href: "/risk", label: "Risk Center", icon: ShieldCheck },
     ],
   },
@@ -43,8 +45,8 @@ export const NAV_GROUPS = [
     items: [
       { href: "/news", label: "News Intelligence", icon: Newspaper },
       { href: "/strategy", label: "Strategy Research", icon: Target },
-      { href: "/backtesting", label: "Backtesting", icon: History },
-      { href: "/analytics", label: "Analytics", icon: BarChart3 },
+      { href: "/backtesting", label: "Backtesting Lab", icon: History },
+      { href: "/analytics", label: "Performance Analytics", icon: BarChart3 },
     ],
   },
   {

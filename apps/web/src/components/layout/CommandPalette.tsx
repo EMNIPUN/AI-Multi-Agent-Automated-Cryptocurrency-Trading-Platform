@@ -92,6 +92,7 @@ export function CommandPalette({
               <button
                 type="button"
                 role="option"
+                aria-selected={false}
                 className={cn(
                   "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors",
                   "hover:bg-muted focus-visible:bg-muted focus-visible:outline-none",
@@ -108,7 +109,7 @@ export function CommandPalette({
           ) : null}
         </ul>
         <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
-          Navigation only · never places orders · Esc to close
+          Navigation only · never places orders · Ctrl+K search · Ctrl+B sidebar · Esc closes
         </p>
       </DialogContent>
     </Dialog>

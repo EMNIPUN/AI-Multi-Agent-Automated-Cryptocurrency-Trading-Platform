@@ -150,6 +150,24 @@ class LocalPlanner:
                 return [PlannedCall("supervisor_command", {"command": "start"})]
         if any(word in text for word in ("usage", "openai cost", "spend", "token budget")):
             return [PlannedCall("openai_usage", {})]
+        # Paper autonomy explanations — no per-trade Approve required for session supervisor.
+        if any(
+            phrase in text
+            for phrase in (
+                "explain the last",
+                "explain last",
+                "last trading decision",
+                "last decision",
+                "why didn't",
+                "why did not",
+                "why is the risk",
+                "why risk",
+                "why holding",
+                "why is it holding",
+                "why blocked",
+            )
+        ):
+            return [PlannedCall("supervisor_status", {})]
         if any(
             word in text
             for word in ("readiness", "live checklist", "live ready", "authorization workflow")
@@ -716,8 +734,15 @@ class Orchestrator:
         *,
         cancelled: bool = False,
         preferred_mode: str = "PAPER",
+        conversation_id: str | None = None,
+        owner_key: str = "local",
     ) -> dict[str, Any]:
         mode = "LIVE" if str(preferred_mode or "").strip().upper() == "LIVE" else "PAPER"
+        from agent.orchestrator.conversation_store import get_conversation_store
+        from agent.orchestrator.intent_router import route_intent
+
+        store = get_conversation_store()
+        cid = store.ensure(conversation_id, owner_key=owner_key)
         if cancelled:
             return self._body(
                 "cancelled",
@@ -725,6 +750,7 @@ class Orchestrator:
                 error="cancelled",
                 openai_called=False,
                 preferred_mode=mode,
+                conversation_id=cid,
             )
         refusal = injection_refusal(message)
         if refusal:
@@ -734,6 +760,7 @@ class Orchestrator:
                 error=refusal,
                 openai_called=False,
                 preferred_mode=mode,
+                conversation_id=cid,
             )
         live_refusal = refuse_live_escalation(message)
         if live_refusal is not None:
@@ -743,44 +770,118 @@ class Orchestrator:
                 error="live_escalation_refused",
                 openai_called=False,
                 preferred_mode=mode,
+                conversation_id=cid,
             )
         openai_called = False
         assistant_text: str | None = None
         model_error: str | None = None
+        used_fallback = False
+        fallback_reason: str | None = None
+        model_name: str | None = None
+        envelopes: list[dict[str, Any]] = []
+        decision = route_intent(message, preferred_mode=mode)
+        planned: list[PlannedCall] = []
+        live_armed = _live_env_armed()
+
         # Prefer LocalPlanner whenever it is confident — OpenAI must not override
         # analysis / intake / approve into vague clarifications or the wrong tool.
-        local_route = LocalPlanner().route(message, preferred_mode=mode)
-        if local_route is not None:
-            planned = list(local_route)
-        else:
-            try:
-                plan_fn = self.model.plan
+        if decision.kind == "deterministic" and decision.planned is not None:
+            planned = list(decision.planned)
+        elif decision.kind == "greeting" or decision.kind == "openai_synthesis":
+            # V2: full tool loop when OpenAI planner supports it; else legacy plan path.
+            run_loop = getattr(self.model, "run_tool_loop_turn", None)
+            if callable(run_loop) and decision.kind == "openai_synthesis":
                 try:
-                    planned = list(plan_fn(message, preferred_mode=mode))
-                except TypeError:
-                    planned = list(plan_fn(message))
-                model_error = getattr(self.model, "last_error", None)
-                openai_called = bool(getattr(self.model, "last_openai_called", False))
-                raw_assistant = getattr(self.model, "last_assistant_text", None)
-                assistant_text = str(raw_assistant).strip() if raw_assistant else None
-            except TimeoutError:
-                planned = LocalPlanner().plan(message, preferred_mode=mode)
-                model_error = "llm_timeout"
-                openai_called = False
-            except Exception:  # noqa: BLE001 — model failure must not authorize anything
-                planned = LocalPlanner().plan(message, preferred_mode=mode)
-                model_error = "llm_unavailable"
-                openai_called = False
-            # If OpenAI returned prose only while futures intake is open, keep the checklist moving.
+                    history = store.model_input_messages(cid, latest_user=message, owner_key=owner_key)
+                    # Drop the duplicate trailing user — run_tool_loop expects full input_messages.
+                    loop = run_loop(
+                        message,
+                        tools=self.tools,
+                        preferred_mode=mode,
+                        live_armed=live_armed,
+                        input_messages=history,
+                        use_analysis_model="compare" in (message or "").lower()
+                        or "why" in (message or "").lower(),
+                    )
+                    if loop is not None and not loop.used_fallback:
+                        openai_called = bool(loop.openai_called)
+                        model_error = loop.error
+                        assistant_text = loop.assistant_text or None
+                        used_fallback = bool(loop.used_fallback)
+                        fallback_reason = loop.fallback_reason
+                        model_name = loop.model
+                        envelopes = list(loop.envelopes or [])
+                        calls = list(loop.tool_calls or [])
+                        reply = self._reply(
+                            calls,
+                            model_error,
+                            message=message,
+                            assistant_text=assistant_text,
+                            preferred_mode=mode,
+                        )
+                        store.append_message(cid, role="user", content=message, owner_key=owner_key)
+                        store.append_message(
+                            cid,
+                            role="assistant",
+                            content=reply,
+                            tool_summary=calls,
+                            owner_key=owner_key,
+                        )
+                        return self._body(
+                            reply,
+                            tool_calls=calls,
+                            error=model_error,
+                            openai_called=openai_called,
+                            preferred_mode=mode,
+                            conversation_id=cid,
+                            used_fallback=used_fallback,
+                            fallback_reason=fallback_reason,
+                            model=model_name,
+                            result_envelopes=envelopes,
+                        )
+                except Exception:  # noqa: BLE001
+                    planned = LocalPlanner().plan(message, preferred_mode=mode)
+                    model_error = "llm_unavailable"
+                    used_fallback = True
+                    fallback_reason = "llm_unavailable"
             if not planned:
                 try:
-                    from agent.orchestrator.futures_intake import get_active_intake
+                    plan_fn = self.model.plan
+                    try:
+                        planned = list(plan_fn(message, preferred_mode=mode))
+                    except TypeError:
+                        planned = list(plan_fn(message))
+                    model_error = getattr(self.model, "last_error", None)
+                    openai_called = bool(getattr(self.model, "last_openai_called", False))
+                    raw_assistant = getattr(self.model, "last_assistant_text", None)
+                    assistant_text = str(raw_assistant).strip() if raw_assistant else None
+                    used_fallback = bool(getattr(self.model, "last_used_fallback", False))
+                    fallback_reason = getattr(self.model, "last_fallback_reason", None)
+                    model_name = getattr(self.model, "last_model", None)
+                except TimeoutError:
+                    planned = LocalPlanner().plan(message, preferred_mode=mode)
+                    model_error = "llm_timeout"
+                    openai_called = False
+                    used_fallback = True
+                    fallback_reason = "llm_timeout"
+                except Exception:  # noqa: BLE001 — model failure must not authorize anything
+                    planned = LocalPlanner().plan(message, preferred_mode=mode)
+                    model_error = "llm_unavailable"
+                    openai_called = False
+                    used_fallback = True
+                    fallback_reason = "llm_unavailable"
+                if not planned:
+                    try:
+                        from agent.orchestrator.futures_intake import get_active_intake
 
-                    if get_active_intake() is not None:
-                        planned = [PlannedCall("continue_futures_intake", {"message": message})]
-                        assistant_text = None
-                except Exception:  # noqa: BLE001
-                    pass
+                        if get_active_intake() is not None:
+                            planned = [PlannedCall("continue_futures_intake", {"message": message})]
+                            assistant_text = None
+                    except Exception:  # noqa: BLE001
+                        pass
+        else:
+            planned = LocalPlanner().plan(message, preferred_mode=mode)
+
         calls: list[dict[str, Any]] = []
         for step, call in enumerate(planned, start=1):
             if step > self.max_steps:
@@ -800,6 +901,18 @@ class Orchestrator:
                 calls.append({"name": call.name, "error": "tool_arguments_invalid"})
                 continue
             calls.append({"name": call.name, "result": redact(result)})
+            # Capture symbol context from analysis tools.
+            if isinstance(result, dict) and result.get("symbol"):
+                store.update_context(
+                    cid,
+                    symbol=str(result.get("symbol")),
+                    interval=str(result.get("interval") or "15"),
+                    last_analysis={
+                        "action": result.get("analysis_action") or result.get("action"),
+                        "risk_verdict": result.get("risk_verdict"),
+                    },
+                    owner_key=owner_key,
+                )
         reply = self._reply(
             calls,
             model_error,
@@ -807,12 +920,25 @@ class Orchestrator:
             assistant_text=assistant_text,
             preferred_mode=mode,
         )
+        store.append_message(cid, role="user", content=message, owner_key=owner_key)
+        store.append_message(
+            cid,
+            role="assistant",
+            content=reply,
+            tool_summary=calls,
+            owner_key=owner_key,
+        )
         return self._body(
             reply,
             tool_calls=calls,
             error=model_error,
             openai_called=openai_called,
             preferred_mode=mode,
+            conversation_id=cid,
+            used_fallback=used_fallback,
+            fallback_reason=fallback_reason,
+            model=model_name,
+            result_envelopes=envelopes,
         )
 
     def _reply(
@@ -865,6 +991,11 @@ class Orchestrator:
         error: str | None,
         openai_called: bool,
         preferred_mode: str = "PAPER",
+        conversation_id: str | None = None,
+        used_fallback: bool = False,
+        fallback_reason: str | None = None,
+        model: str | None = None,
+        result_envelopes: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         mode = "LIVE" if str(preferred_mode or "").upper() == "LIVE" else "PAPER"
         live_tool_names = {
@@ -892,6 +1023,9 @@ class Orchestrator:
             if isinstance(result, dict) and result.get("exchange_order_sent") is True:
                 exchange_sent = True
                 break
+        orchestration_mode = "openai" if openai_called and not used_fallback else (
+            "fallback" if used_fallback else "deterministic"
+        )
         return {
             "reply": reply,
             "tool_calls": tool_calls,
@@ -904,4 +1038,10 @@ class Orchestrator:
             "preferred_mode": effective_mode,
             "live_env_armed": _live_env_armed(),
             "error": error,
+            "conversation_id": conversation_id,
+            "used_fallback": bool(used_fallback),
+            "fallback_reason": fallback_reason,
+            "model": model,
+            "orchestration_mode": orchestration_mode,
+            "result_envelopes": result_envelopes or [],
         }

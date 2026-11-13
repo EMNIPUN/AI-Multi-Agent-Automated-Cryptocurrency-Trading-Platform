@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-import { PageFrame, SectionPanel } from "@/components/command-center";
+import { SectionPanel } from "@/components/command-center";
+import { OverviewTemplate } from "@/components/design-system/templates";
 import { RiskIndicator, StatusBadge } from "@/components/design-system";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
@@ -60,17 +61,17 @@ export default function RiskPage() {
   const state = halted ? "halted" : risk ? "ok" : "unknown";
 
   return (
-    <PageFrame
+    <OverviewTemplate
       title="Risk Center"
-      description="PAPER risk facts from the supervisor journal — daily loss, halt, exposure. LIVE stays locked."
-      modes={["readonly", "paper", "live"]}
+      description="PAPER risk facts from the supervisor journal — daily loss, halt, exposure. LIVE follows the approval gates."
+      modes={["readonly", "paper"]}
     >
       <DataModeBanner
         mode={risk ? "paper" : "unavailable"}
         notes={[risk?.label || "PAPER risk facts only — not exchange margin"]}
       />
       <div className="mb-4 flex flex-wrap gap-2">
-        <StatusBadge label="LIVE locked" tone="live" />
+        <StatusBadge label="LIVE gated" tone="live" />
         <StatusBadge label="PAPER preferred" tone="paper" />
         <StatusBadge label={halted ? "HALTED" : String(risk?.supervisor_state || "—")} tone={halted ? "danger" : "neutral"} />
       </div>
@@ -110,6 +111,6 @@ export default function RiskPage() {
           <Link href="/autonomy">Open Autonomous Trading</Link>
         </Button>
       </SectionPanel>
-    </PageFrame>
+    </OverviewTemplate>
   );
 }

@@ -1,28 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
-const THEME_KEY = "cryptonova.theme.v2";
+const THEME_KEY = "cryptonova.theme.v3";
 const DENSITY_KEY = "cryptonova.density.v1";
 
 export type Density = "comfortable" | "compact";
 
-/** Persist light/dark preference. Defaults to light (Bybit-style readability). */
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+/** Dark is the primary theme. A stored "light" choice is the only way to leave it. */
 export function usePersistedTheme() {
-  const [light, setLight] = useState(true);
+  const [light, setLight] = useState(false);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     try {
       const stored = localStorage.getItem(THEME_KEY);
-      setLight(stored !== "dark");
+      setLight(stored === "light");
     } catch {
-      /* ignore */
+      setLight(false);
     }
     setReady(true);
   }, []);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     if (!ready) return;
     document.documentElement.classList.toggle("light", light);
     document.documentElement.classList.toggle("dark", !light);
@@ -41,7 +43,7 @@ export function usePersistedDensity() {
   const [density, setDensity] = useState<Density>("comfortable");
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     try {
       const stored = localStorage.getItem(DENSITY_KEY);
       if (stored === "compact" || stored === "comfortable") setDensity(stored);
@@ -51,7 +53,7 @@ export function usePersistedDensity() {
     setReady(true);
   }, []);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     if (!ready) return;
     document.documentElement.dataset.density = density;
     try {

@@ -8,10 +8,11 @@ export function PageFrame({
   eyebrow = "CryptoNova",
   title,
   description,
-  modes = ["readonly", "live"],
+  modes = ["readonly"],
   actions,
   children,
   className,
+  template,
 }: {
   eyebrow?: string;
   title: string;
@@ -20,9 +21,13 @@ export function PageFrame({
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
+  template?: "overview" | "terminal" | "ai" | "operations" | "research" | "settings";
 }) {
   return (
-    <div className={cn("flex w-full min-h-0 min-w-0 max-w-full flex-col space-y-5 pb-8", className)}>
+    <div
+      data-template={template}
+      className={cn("flex w-full min-h-0 min-w-0 max-w-full flex-col space-y-5 pb-8", className)}
+    >
       <BlurFade className="shrink-0">
         <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 max-w-3xl">
@@ -30,7 +35,7 @@ export function PageFrame({
               {eyebrow}
             </p>
             <div className="mt-0.5 flex flex-wrap items-center gap-2">
-              <h1 className="text-lg font-medium tracking-tight text-foreground md:text-xl">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-[1.75rem] md:leading-8">
                 {title}
               </h1>
               {modes.length > 0 ? (

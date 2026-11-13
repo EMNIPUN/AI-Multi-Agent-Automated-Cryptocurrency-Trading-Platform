@@ -42,7 +42,12 @@ export type OrchestratorProxyRoute =
   | "autonomy"
   | "decisions"
   | "agents/runtime"
-  | "risk";
+  | "risk"
+  | "diagnostics"
+  | "openai-status"
+  | "conversations"
+  | `conversations/${string}`
+  | `conversations/${string}/reset`;
 
 export async function proxyOrchestrator(request: Request, route: OrchestratorProxyRoute) {
   const error = operatorProxyError(request);

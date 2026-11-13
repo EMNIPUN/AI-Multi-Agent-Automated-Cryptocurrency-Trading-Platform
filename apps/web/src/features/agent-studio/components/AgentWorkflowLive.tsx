@@ -107,7 +107,7 @@ export function AgentWorkflowLive({
     <div className="relative overflow-hidden rounded-3xl border border-border bg-muted/40 p-5 md:p-6">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-orange-300/80">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-brand">
             Live workflow
           </p>
           <h2 className="mt-1 text-xl font-medium tracking-tight text-foreground">

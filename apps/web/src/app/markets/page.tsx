@@ -3,14 +3,13 @@
 import { useMemo, useState, useTransition } from "react";
 import { Radio, SlidersHorizontal } from "lucide-react";
 
+import { TradingTerminalTemplate } from "@/components/design-system/templates";
 import { MarketCandleChart } from "@/components/market/MarketCandleChart";
 import { MarketConnectionBadge } from "@/components/market/MarketConnectionBadge";
 import { OrderBookPanel } from "@/components/market/OrderBookPanel";
 import { RecentTradesFeed } from "@/components/market/RecentTradesFeed";
 import { AnimatedCircularProgressBar } from "@/components/magicui/animated-circular-progress-bar";
 import { BlurFade } from "@/components/magicui/blur-fade";
-import { BorderBeam } from "@/components/magicui/border-beam";
-import { NumberTicker } from "@/components/magicui/number-ticker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -68,46 +67,27 @@ export default function MarketsPage() {
   const base = symbol.replace("USDT", "");
 
   return (
-    <div className="space-y-4 pb-6">
-      <BlurFade>
-        <section className="relative overflow-hidden rounded-3xl border border-border bg-muted/40 p-5 md:p-6">
-          <BorderBeam size={240} duration={14} colorFrom="#F7A600" colorTo="#FFCE6E" />
-          <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-brand">
-                Trading Desk
-              </p>
-              <h1 className="text-metallic mt-1 text-3xl font-medium tracking-tight md:text-4xl">
-                Markets
-              </h1>
-              <p className="mt-2 max-w-xl text-sm text-foreground">
-                Live Bybit prices, candles, order book, and trades — read-only. No wallet or order
-                entry here. Live trading stays locked.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <MarketConnectionBadge
-                state={
-                  stream.error && stream.streamMode === "disconnected"
-                    ? "error"
-                    : stream.connectionState
-                }
-                stale={stream.stale}
-              />
-              <Badge
-                variant={stream.live ? "outline" : "warning"}
-                className="rounded-full border-border"
-              >
-                <Radio className="mr-1 h-3 w-3" />
-                {modeLabel}
-              </Badge>
-              {stream.updatedAt ? (
-                <span className="text-[11px] text-foreground">{stream.updatedAt}</span>
-              ) : null}
-            </div>
-          </div>
-        </section>
-      </BlurFade>
+    <TradingTerminalTemplate
+      title="Markets"
+      description="Public prices, candles, order book, and trades. Read-only. No order entry."
+      modes={["readonly"]}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <MarketConnectionBadge
+            state={
+              stream.error && stream.streamMode === "disconnected"
+                ? "error"
+                : stream.connectionState
+            }
+            stale={stream.stale}
+          />
+          <Badge variant={stream.live ? "outline" : "warning"} className="rounded-full border-border">
+            <Radio className="mr-1 h-3 w-3" />
+            {modeLabel}
+          </Badge>
+        </div>
+      }
+    >
 
       <BlurFade delay={0.04}>
         <div className="flex items-center gap-2">
@@ -212,32 +192,34 @@ export default function MarketsPage() {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_19rem]">
         <BlurFade delay={0.06} className="min-w-0 space-y-4">
-          <section className="relative overflow-hidden rounded-3xl border border-border bg-muted/40 p-4 md:p-5">
-            <BorderBeam size={200} duration={12} colorFrom="#F7A600" colorTo="#FFCE6E" />
+          <section className="cn-panel p-4 md:p-5">
             <div className="relative z-10 mb-4 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-xs text-foreground">
+                <p className="text-xs text-muted-foreground">
                   {category === "linear" ? "USDT perpetual" : "Spot"} · {symbol}
                 </p>
                 <div className="mt-1 flex flex-wrap items-baseline gap-3">
-                  <span className="font-mono text-3xl tracking-tight text-foreground md:text-4xl">
+                  <span className="font-mono text-2xl tracking-tight text-foreground md:text-[1.75rem]">
                     {selectedTicker ? (
-                      <NumberTicker
-                        value={selectedTicker.last_price}
-                        decimalPlaces={selectedTicker.last_price >= 100 ? 1 : 4}
-                      />
+                      selectedTicker.last_price.toLocaleString(undefined, {
+                        minimumFractionDigits: selectedTicker.last_price >= 100 ? 1 : 4,
+                        maximumFractionDigits: selectedTicker.last_price >= 100 ? 1 : 4,
+                      })
                     ) : (
-                      <Skeleton className="inline-block h-9 w-36 rounded-md" />
+                      <Skeleton className="inline-block h-8 w-36 rounded-md" />
                     )}
+                    {selectedTicker ? (
+                      <span className="ml-1.5 text-sm text-muted-foreground">USDT</span>
+                    ) : null}
                   </span>
                   <span
                     className={cn(
                       "rounded-full px-2 py-0.5 font-mono text-sm",
                       pct == null
-                        ? "text-foreground"
+                        ? "text-muted-foreground"
                         : pctUp
-                          ? "bg-emerald-500/10 text-emerald-400"
-                          : "bg-rose-500/10 text-rose-400",
+                          ? "bg-profit/10 text-profit"
+                          : "bg-loss/10 text-loss",
                     )}
                   >
                     {pct == null ? "—" : `${pctUp ? "+" : ""}${pct.toFixed(2)}%`}
@@ -307,7 +289,7 @@ export default function MarketsPage() {
                     <span>{sym.replace("USDT", "")}/USDT</span>
                     <span
                       className={
-                        up ? "text-emerald-400" : change == null ? "" : "text-rose-400"
+                        up ? "text-profit" : change == null ? "" : "text-loss"
                       }
                     >
                       {change == null ? "—" : `${up ? "+" : ""}${change.toFixed(2)}%`}
@@ -334,19 +316,19 @@ export default function MarketsPage() {
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-medium text-foreground">Recent trades</h2>
               <Badge variant="outline" className="rounded-full border-border text-[10px]">
-                Live
+                Public tape
               </Badge>
             </div>
             <RecentTradesFeed trades={stream.trades} />
           </section>
 
           {stream.error ? (
-            <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+            <p className="rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-foreground">
               {stream.error}
             </p>
           ) : null}
         </BlurFade>
       </div>
-    </div>
+    </TradingTerminalTemplate>
   );
 }

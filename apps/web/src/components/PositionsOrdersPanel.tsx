@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Briefcase, ListOrdered, RefreshCw } from "lucide-react";
 
-import { BorderBeam } from "@/components/magicui/border-beam";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,8 +49,8 @@ function formatQty(value: string | null | undefined) {
 function pnlTone(value: string | null | undefined) {
   const n = value == null || value === "" ? null : Number(value);
   if (n == null || !Number.isFinite(n)) return "text-muted-foreground";
-  if (n > 0) return "text-emerald-400";
-  if (n < 0) return "text-rose-400";
+  if (n > 0) return "text-profit";
+  if (n < 0) return "text-loss";
   return "text-muted-foreground";
 }
 
@@ -310,8 +309,7 @@ export function PositionsOrdersPanel() {
   ];
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card/60 p-5 md:p-6">
-      <BorderBeam size={190} duration={13} colorFrom="#F7A600" colorTo="#FFCE6E" />
+    <section className="relative overflow-hidden rounded-[14px] border border-border bg-card p-5">
       <div className="relative z-10 flex flex-row items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 font-display text-xl tracking-tight">

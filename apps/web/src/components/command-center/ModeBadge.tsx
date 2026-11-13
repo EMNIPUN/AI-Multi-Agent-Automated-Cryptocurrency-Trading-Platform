@@ -4,16 +4,16 @@ import { cn } from "@/lib/utils";
 export type ModeKind = "paper" | "live" | "unavailable" | "testnet" | "readonly";
 
 const STYLES: Record<ModeKind, string> = {
-  paper: "border-brand/40 bg-brand/10 text-foreground",
-  live: "border-rose-400/50 bg-rose-400/15 text-destructive",
-  unavailable: "border-rose-400/30 bg-rose-400/10 text-rose-600 dark:text-destructive",
-  testnet: "border-brand/40 bg-brand/10 text-foreground",
-  readonly: "border-brand/35 bg-brand/10 text-foreground",
+  paper: "border-execution-paper/40 bg-execution-paper/10 text-foreground",
+  live: "border-execution-live/40 bg-execution-live/10 text-foreground",
+  unavailable: "border-destructive/40 bg-destructive/10 text-destructive",
+  testnet: "border-execution-testnet/40 bg-execution-testnet/10 text-foreground",
+  readonly: "border-border bg-muted text-muted-foreground",
 };
 
 const LABELS: Record<ModeKind, string> = {
   paper: "PAPER",
-  live: "LIVE",
+  live: "LIVE gated",
   unavailable: "Unavailable",
   testnet: "Testnet",
   readonly: "Read-only",

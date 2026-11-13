@@ -41,7 +41,7 @@ export function AgentLiveFeed({
     <div className="rounded-3xl border border-border bg-muted/40 p-5 md:p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-orange-300/80">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-brand">
             Live feed
           </p>
           <h2 className="mt-1 text-xl font-medium tracking-tight text-foreground">Agent events</h2>
@@ -75,7 +75,7 @@ export function AgentLiveFeed({
               >
                 <div className="flex items-start gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-muted/40">
-                    <Icon className="h-4 w-4 text-orange-300" />
+                    <Icon className="h-4 w-4 text-brand" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-2">

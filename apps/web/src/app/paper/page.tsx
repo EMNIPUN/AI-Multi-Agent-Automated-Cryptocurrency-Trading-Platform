@@ -5,7 +5,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { LogoLoader } from "@/components/brand/LogoLoader";
-import { PageFrame } from "@/components/command-center";
+import { OperationsTemplate } from "@/components/design-system/templates";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -187,10 +187,10 @@ function PaperPageInner() {
   }
 
   return (
-    <PageFrame
+    <OperationsTemplate
       title="Paper Trading"
       description="Read-only view of local simulated sessions. No exchange orders. SIMULATED / PAPER ONLY."
-      modes={["paper", "live", "readonly"]}
+      modes={["paper", "readonly"]}
     >
       {sessionId ? (
         <p className="mb-3 text-sm">
@@ -409,7 +409,7 @@ function PaperPageInner() {
           </Section>
         </>
       ) : null}
-    </PageFrame>
+    </OperationsTemplate>
   );
 }
 

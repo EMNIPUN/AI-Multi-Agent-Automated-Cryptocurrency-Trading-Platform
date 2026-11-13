@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { Activity, History } from "lucide-react";
 
-import { PageFrame, SectionPanel } from "@/components/command-center";
+import { SectionPanel } from "@/components/command-center";
+import { ResearchTemplate } from "@/components/design-system/templates";
 import { SignalsPanel } from "@/features/agent-studio/components/SignalsPanel";
 import { Button } from "@/components/ui/button";
 
 export default function StrategyResearchPage() {
   return (
-    <PageFrame
+    <ResearchTemplate
       title="Strategy Research"
       description="Closed-candle signal research from the multi-agent pipeline. Signals are not orders — live trading stays locked."
-      modes={["readonly", "live", "paper"]}
+      modes={["readonly", "paper"]}
       actions={
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm" className="rounded-full">
@@ -33,10 +34,9 @@ export default function StrategyResearchPage() {
       <SectionPanel
         title="Signal engine"
         description="Reuses the existing Phase 4B/4C evaluate + history adapters. No new trading permissions."
-        beam
       >
         <SignalsPanel symbol="BTCUSDT" category="linear" interval="15" />
       </SectionPanel>
-    </PageFrame>
+    </ResearchTemplate>
   );
 }

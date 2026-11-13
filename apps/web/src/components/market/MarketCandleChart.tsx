@@ -81,12 +81,12 @@ export function MarketCandleChart({
     const chart = createChart(ref.current, {
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: isLight ? "#475569" : "#94a3b8",
+        textColor: isLight ? "#526175" : "#A5AFBD",
         fontFamily: "IBM Plex Mono, monospace",
       },
       grid: {
-        vertLines: { color: isLight ? "rgba(148,163,184,0.35)" : "rgba(51,65,85,0.45)" },
-        horzLines: { color: isLight ? "rgba(148,163,184,0.35)" : "rgba(51,65,85,0.45)" },
+        vertLines: { color: isLight ? "rgba(217,224,234,0.9)" : "rgba(40,49,61,0.9)" },
+        horzLines: { color: isLight ? "rgba(217,224,234,0.9)" : "rgba(40,49,61,0.9)" },
       },
       rightPriceScale: {
         borderVisible: false,
@@ -106,11 +106,11 @@ export function MarketCandleChart({
     chartRef.current = chart;
 
     const candle = chart.addCandlestickSeries({
-      upColor: isLight ? "#0f766e" : "#10b981",
-      downColor: isLight ? "#dc2626" : "#ef4444",
+      upColor: isLight ? "#087A54" : "#20C997",
+      downColor: isLight ? "#B4233D" : "#EF6674",
       borderVisible: false,
-      wickUpColor: isLight ? "#0f766e" : "#10b981",
-      wickDownColor: isLight ? "#dc2626" : "#ef4444",
+      wickUpColor: isLight ? "#087A54" : "#20C997",
+      wickDownColor: isLight ? "#B4233D" : "#EF6674",
       lastValueVisible: true,
       priceLineVisible: true,
     });
@@ -127,8 +127,8 @@ export function MarketCandleChart({
       lastValueVisible: false,
     };
     const ema20 = chart.addLineSeries({ color: "#F7A600", ...lineOpts });
-    const ema50 = chart.addLineSeries({ color: "#a78bfa", ...lineOpts });
-    const ema200 = chart.addLineSeries({ color: "#fbbf24", ...lineOpts });
+    const ema50 = chart.addLineSeries({ color: isLight ? "#225DB6" : "#63A7FF", ...lineOpts });
+    const ema200 = chart.addLineSeries({ color: isLight ? "#526175" : "#A5AFBD", ...lineOpts });
     seriesRef.current = { candle, volume, ema20, ema50, ema200 };
 
     const onResize = () => {
@@ -218,9 +218,9 @@ export function MarketCandleChart({
     >
       <div className="absolute right-2 top-2 z-10 rounded border border-border/50 bg-background/80 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
         {live ? (
-          <span className="text-emerald-400">PUBLIC WS LIVE</span>
+          <span className="text-profit">Stream connected</span>
         ) : (
-          <span className="text-amber-400">REST / STALE</span>
+          <span className="text-warning">Stream stale</span>
         )}
       </div>
       {candles.length === 0 ? (

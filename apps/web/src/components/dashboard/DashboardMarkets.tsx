@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ArrowRight, TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { BorderBeam } from "@/components/magicui/border-beam";
 import { Button } from "@/components/ui/button";
 import { fetchTickers } from "@/lib/market/api";
 import { DEFAULT_WATCHLIST, type MarketTicker } from "@/lib/market/types";
@@ -37,8 +36,7 @@ export function DashboardMarkets() {
   }, []);
 
   return (
-    <div className="relative h-full overflow-hidden rounded-3xl border border-border/70 bg-card/60 p-5 md:p-6">
-      <BorderBeam size={160} duration={11} colorFrom="#F7A600" colorTo="#FFCE6E" />
+    <div className="relative h-full overflow-hidden rounded-[14px] border border-border bg-card p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-xl tracking-tight">Live markets</h2>
@@ -73,9 +71,9 @@ export function DashboardMarkets() {
                     <span className="text-muted-foreground/60">/USDT</span>
                   </p>
                   {pct == null ? null : up ? (
-                    <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+                    <TrendingUp className="h-3.5 w-3.5 text-profit" />
                   ) : (
-                    <TrendingDown className="h-3.5 w-3.5 text-rose-400" />
+                    <TrendingDown className="h-3.5 w-3.5 text-loss" />
                   )}
                 </div>
                 <p className="mt-2 font-mono text-xl tracking-tight">
@@ -89,8 +87,8 @@ export function DashboardMarkets() {
                     pct == null
                       ? "text-muted-foreground"
                       : up
-                        ? "text-emerald-400"
-                        : "text-rose-400",
+                        ? "text-profit"
+                        : "text-loss",
                   )}
                 >
                   {pct == null ? "Waiting…" : `${up ? "+" : ""}${pct.toFixed(2)}% today`}

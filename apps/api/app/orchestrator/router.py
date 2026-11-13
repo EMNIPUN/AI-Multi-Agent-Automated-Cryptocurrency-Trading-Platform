@@ -205,13 +205,43 @@ def _status_tool() -> dict[str, Any]:
         if live_armed
         else "Live Bybit trading is not armed yet (turn on AGENT_ALLOW_LIVE and MAINNET_TRADING_ENABLED)."
     )
+    decision = body.get("latest_decision") if isinstance(body.get("latest_decision"), dict) else None
+    decision_lines = ""
+    if decision:
+        action = decision.get("action") or decision.get("analysis_action") or "HOLD"
+        risk = decision.get("risk_verdict") or decision.get("risk") or "—"
+        blockers = decision.get("blockers") or decision.get("reasons") or decision.get("reason_codes")
+        if isinstance(blockers, list):
+            blocker_txt = ", ".join(str(b) for b in blockers[:6]) or "none"
+        else:
+            blocker_txt = str(blockers or "none")
+        freshness = decision.get("freshness") or decision.get("data_freshness") or "—"
+        strategy = decision.get("strategy") or decision.get("strategy_name") or "—"
+        decision_lines = (
+            f"\nLast paper decision: {action} (strategy={strategy}, risk={risk}).\n"
+            f"Blockers: {blocker_txt}. Freshness: {freshness}.\n"
+            "Paper sessions are session-authorized — no per-trade Approve is required once started."
+        )
     body["summary"] = (
         f"Paper supervisor is {state_nice}"
         f"{' (feature on)' if gate == 'on' else ' (feature off)'}.\n"
         f"Watching {symbol} with about {capital} USDT paper capital.\n"
         "Say “Start autonomous paper trading” to let paper trades run without per-trade approval.\n"
         f"{live_line}"
+        f"{decision_lines}"
     )
+    body["decision_inspector"] = {
+        "action": (decision or {}).get("action") or (decision or {}).get("analysis_action"),
+        "strategy": (decision or {}).get("strategy") or (decision or {}).get("strategy_name"),
+        "risk_verdict": (decision or {}).get("risk_verdict") or (decision or {}).get("risk"),
+        "blockers": (decision or {}).get("blockers")
+        or (decision or {}).get("reasons")
+        or (decision or {}).get("reason_codes"),
+        "freshness": (decision or {}).get("freshness") or (decision or {}).get("data_freshness"),
+        "per_trade_approval": False,
+        "session_authorized": True,
+        "live_orders": False,
+    }
     return body
 
 
@@ -852,11 +882,98 @@ def orchestrator_chat(
         or "PAPER"
     ).strip().upper()
     preferred_mode = "LIVE" if raw_mode == "LIVE" else "PAPER"
+    conversation_id = body.get("conversation_id")
     return _orchestrator().handle(
         message,
         cancelled=bool(body.get("cancelled")),
         preferred_mode=preferred_mode,
+        conversation_id=str(conversation_id) if conversation_id else None,
+        owner_key="local",
     )
+
+
+@router.get("/conversations")
+def orchestrator_conversations(
+    request: Request,
+    settings: Annotated[ApiSettings, Depends(get_api_settings)],
+) -> dict[str, Any]:
+    _loopback(request, settings)
+    from agent.orchestrator.conversation_store import get_conversation_store
+
+    store = get_conversation_store()
+    return {"conversations": store.list_conversations(owner_key="local"), "live_orders": False}
+
+
+@router.get("/conversations/{conversation_id}")
+def orchestrator_conversation_detail(
+    conversation_id: str,
+    request: Request,
+    settings: Annotated[ApiSettings, Depends(get_api_settings)],
+) -> dict[str, Any]:
+    _loopback(request, settings)
+    from agent.orchestrator.conversation_store import get_conversation_store
+
+    store = get_conversation_store()
+    meta = store.get(conversation_id, owner_key="local")
+    if meta is None:
+        raise HTTPException(status_code=404, detail="conversation_not_found")
+    return {
+        "conversation": meta,
+        "messages": store.recent_messages(conversation_id, owner_key="local", limit=100),
+        "live_orders": False,
+    }
+
+
+@router.post("/conversations/{conversation_id}/reset")
+def orchestrator_conversation_reset(
+    conversation_id: str,
+    request: Request,
+    settings: Annotated[ApiSettings, Depends(get_api_settings)],
+) -> dict[str, Any]:
+    _loopback(request, settings)
+    from agent.orchestrator.conversation_store import get_conversation_store
+
+    ok = get_conversation_store().reset(conversation_id, owner_key="local")
+    if not ok:
+        raise HTTPException(status_code=404, detail="conversation_not_found")
+    return {"ok": True, "conversation_id": conversation_id, "live_orders": False}
+
+
+@router.get("/openai-status")
+def orchestrator_openai_status(
+    request: Request,
+    settings: Annotated[ApiSettings, Depends(get_api_settings)],
+) -> dict[str, Any]:
+    _loopback(request, settings)
+    return _openai_usage_tool()
+
+
+@router.get("/diagnostics")
+def orchestrator_diagnostics(
+    request: Request,
+    settings: Annotated[ApiSettings, Depends(get_api_settings)],
+) -> dict[str, Any]:
+    """Read-only Orchestrator V2 diagnostics for the UI."""
+    _loopback(request, settings)
+    from agent.orchestrator.tool_registry import permission_matrix
+
+    status = _status_tool()
+    usage = _openai_usage_tool()
+    latest = status.get("latest_decision") if isinstance(status.get("latest_decision"), dict) else None
+    return {
+        "supervisor": {
+            "state": status.get("state"),
+            "enabled": status.get("enabled"),
+            "live_orders": False,
+            "per_trade_approval": status.get("per_trade_approval"),
+            "autonomous": status.get("autonomous"),
+        },
+        "latest_decision": latest,
+        "openai": usage,
+        "tool_permission_matrix": permission_matrix(),
+        "live_orders": False,
+        "places_orders": False,
+    }
 
 
 @router.get("/report")

@@ -1,6 +1,7 @@
-import { redirect } from "next/navigation";
+"use client";
 
-/** Overview removed — Orchestrator is the control center. */
+import { DashboardHome } from "@/components/dashboard/DashboardHome";
+
 export default function DashboardPage() {
-  redirect("/orchestrator");
+  return <DashboardHome />;
 }

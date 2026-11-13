@@ -283,15 +283,15 @@ export function RunBacktestPanel({ onRunCompleted }: Props) {
         <Badge
           className={
             caps.run_api_enabled
-              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-100"
-              : "border-amber-400/30 bg-amber-400/10 text-amber-100"
+              ? "border-profit/30 bg-profit/10 text-foreground"
+              : "border-warning/30 bg-warning/10 text-foreground"
           }
         >
           {caps.run_api_enabled ? "Run API on" : "Run API off"}
         </Badge>
       </div>
 
-      <p className="mt-3 text-xs uppercase tracking-[0.14em] text-orange-300/75">{SIM_LABEL}</p>
+      <p className="mt-3 text-xs uppercase tracking-[0.14em] text-brand">{SIM_LABEL}</p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="min-w-0">
@@ -464,9 +464,9 @@ export function RunBacktestPanel({ onRunCompleted }: Props) {
       ) : null}
 
       {validationError ? (
-        <p className="mt-3 text-sm text-rose-300">{validationError}</p>
+        <p className="mt-3 text-sm text-destructive">{validationError}</p>
       ) : null}
-      {submitError ? <p className="mt-3 text-sm text-rose-300">{submitError}</p> : null}
+      {submitError ? <p className="mt-3 text-sm text-destructive">{submitError}</p> : null}
 
       {jobs.length > 0 ? (
         <div className="mt-3 space-y-2">
@@ -488,7 +488,7 @@ export function RunBacktestPanel({ onRunCompleted }: Props) {
                 ) : null}
               </p>
               {job.run_id ? (
-                <p className="mt-1 text-xs text-emerald-200/80">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Saved run: <span className="font-mono">{job.run_id}</span>
                 </p>
               ) : null}
