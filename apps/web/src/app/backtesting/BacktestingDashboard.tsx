@@ -16,6 +16,9 @@ import { Filter, RotateCcw, ShieldAlert } from "lucide-react";
 
 import { LogoLoader } from "@/components/brand/LogoLoader";
 import { ResearchTemplate } from "@/components/design-system/templates";
+import { MetricCard } from "@/components/design-system/MetricCard";
+import { cn } from "@/lib/utils";
+import { chartAxisProps, chartGridProps, chartLineProps, chartTooltipProps } from "@/lib/charts/recharts-theme";
 import { CodeComparison } from "@/components/magicui/code-comparison";
 import { Marquee } from "@/components/magicui/marquee";
 import { Badge } from "@/components/ui/badge";
@@ -95,11 +98,11 @@ function Stat({
   valueClassName?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-muted/30 px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-lg ${valueClassName ?? "font-mono text-foreground"}`}>{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
-    </div>
+    <MetricCard
+      label={label}
+      value={<span className={cn("font-mono text-base md:text-lg", valueClassName ?? "text-foreground")}>{value}</span>}
+      hint={hint}
+    />
   );
 }
 
@@ -729,17 +732,15 @@ export function BacktestingDashboard() {
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartPoints}>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="t" hide />
-                      <YAxis domain={["auto", "auto"]} width={72} />
-                      <Tooltip />
+                      <YAxis {...chartAxisProps} domain={["auto", "auto"]} width={72} />
+                      <Tooltip {...chartTooltipProps} />
                       <Line
                         type="monotone"
                         dataKey="v"
                         name={series === "marked" ? "Marked equity" : "Realized balance"}
-                        dot={false}
-                        strokeWidth={2}
-                        isAnimationActive={false}
+                        {...chartLineProps}
                       />
                     </LineChart>
                   </ResponsiveContainer>

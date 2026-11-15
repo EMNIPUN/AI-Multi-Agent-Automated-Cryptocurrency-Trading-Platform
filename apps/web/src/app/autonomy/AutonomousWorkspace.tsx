@@ -6,7 +6,11 @@ import { Activity, ArrowRight, Bot, CircleStop, Clock3, LockKeyhole, Pause, Play
 
 import { MetricGrid, MetricTile, SectionPanel } from "@/components/command-center";
 import { OperationsTemplate } from "@/components/design-system/templates";
-import { StatusBadge } from "@/components/design-system";
+import { ExecutionMode, StatusBadge, StatusIndicator } from "@/components/design-system";
+import { usePolledResource } from "@/hooks/use-polled-resource";
+import { fetchAutonomySnapshot } from "@/lib/api/orchestrator";
+import { useExecutionState } from "@/providers/ExecutionStateProvider";
+import { ActivityTimeline } from "./ActivityTimeline";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -65,6 +69,8 @@ export function AutonomousWorkspace() {
   const abort = useRef<AbortController | null>(null);
   const commandBusy = useRef(false);
   const mounted = useRef(true);
+  const exec = useExecutionState();
+  const autonomy = usePolledResource(fetchAutonomySnapshot, { intervalMs: 20_000 });
 
   const load = useCallback(async () => {
     const id = ++requestId.current;
@@ -164,11 +170,11 @@ export function AutonomousWorkspace() {
           <span className={cn("size-2 rounded-full", health === "healthy" && !loadError ? "bg-profit" : "bg-muted-foreground")} />
           <span className="font-medium">{loadError ? "Snapshot unavailable" : health === "healthy" ? "Worker connected" : health === "stale" ? "Worker heartbeat stale" : health === "waiting" ? "Waiting for worker heartbeat" : "Worker offline"}</span>
           <span className="text-muted-foreground">Refreshes every 8s · {updatedAt ? `last received ${formatTime(updatedAt)}` : "awaiting first snapshot"}</span>
-          <StatusBadge label="PAPER" tone="paper" />
-          <StatusBadge label="TESTNET gated" tone="neutral" />
-          <StatusBadge label="LIVE gated" tone="live" />
+          <ExecutionMode mode="paper" />
+          <ExecutionMode mode="testnet" armed={exec.data?.testnet === "armed"} />
+          <ExecutionMode mode="live" armed={exec.data?.live === "armed_approve_required"} />
         </div>
-        <StatusBadge label={status ? state : "CONNECTING"} tone={state === "RUNNING" ? "ok" : state === "HALTED" || state === "ERROR" ? "danger" : "neutral"} />
+        <StatusIndicator status={status ? state : "UNKNOWN"} label={status ? state : "CONNECTING"} pulse size="md" />
       </div>
 
       {(loadError || commandError) && <div role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">{commandError || loadError}{loadError && updatedAt ? <p className="mt-1 text-xs">Showing the last successful snapshot. Controls are disabled until refreshed.</p> : null}</div>}
@@ -232,8 +238,16 @@ export function AutonomousWorkspace() {
 
         <JournalPanels report={report} />
 
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,1fr)]">
+          <ActivityTimeline snap={autonomy.data} loading={autonomy.loading} />
+          <SectionPanel title="Agent runtime" description={autonomy.data?.agents?.honesty_note ?? "Per-agent status from the latest contributions."}>
+            {!autonomy.data ? <Skeleton className="h-40 rounded-xl" /> : <ul className="space-y-1.5">{autonomy.data.agents.agents.map((a) => <li key={a.agent_id} className="flex items-center justify-between gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs"><span className="min-w-0 truncate text-foreground">{a.label}</span><span className="flex shrink-0 items-center gap-2">{a.bias ? <span className="font-mono text-[10px] text-muted-foreground">{a.bias}{a.confidence != null ? ` · ${Math.round(a.confidence * 100)}%` : ""}</span> : null}<StatusIndicator status={a.status} /></span></li>)}</ul>}
+            <Link href="/agents" className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-brand">Open agent workspace<ArrowRight className="size-3.5" /></Link>
+          </SectionPanel>
+        </div>
+
         <SectionPanel title="Runtime & limits" description="Observed timestamps and explicit automation boundaries.">
-          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><SessionFact label="Worker heartbeat" value={formatTime(status?.heartbeat_ms)} /><SessionFact label="Last evaluated candle" value={formatTime(status?.last_candle_start)} /><SessionFact label="Protective monitoring" value={status?.protective_monitoring ? "Enabled" : "Inactive"} /><SessionFact label="Execution environment" value="Paper · exchange orders locked" /></dl>
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><SessionFact label="Worker heartbeat" value={formatTime(status?.heartbeat_ms)} /><SessionFact label="Last evaluated candle" value={formatTime(status?.last_candle_start)} /><SessionFact label="Protective monitoring" value={status?.protective_monitoring ? "Enabled" : "Inactive"} /><SessionFact label="Execution environment" value={exec.data?.live === "armed_approve_required" ? `Paper session · LIVE lane armed (Bybit ${exec.data.bybitEnv}, Approve per order)` : "Paper session · exchange orders locked"} /></dl>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><p className="max-w-3xl text-xs leading-relaxed text-muted-foreground">Signals and consensus scores express model agreement, not a calibrated chance of profit. Paper results exclude unsupported futures mechanics. Validate on unseen market data and realistic costs before considering live execution.</p><Link href="/backtesting" className="inline-flex items-center gap-1.5 text-xs font-medium text-brand">Validate strategies<ArrowRight className="size-3.5" /></Link></div>
         </SectionPanel>
       </>}

@@ -1,14 +1,40 @@
 import { StatusBadge, type StatusTone } from "@/components/design-system/StatusBadge";
 
-const MODES = {
+export type ExecutionModeKind = "paper" | "testnet" | "live" | "blocked";
+
+const MODES: Record<ExecutionModeKind, { label: string; tone: StatusTone }> = {
   paper: { label: "PAPER", tone: "paper" },
   testnet: { label: "TESTNET", tone: "info" },
-  live: { label: "LIVE gated", tone: "live" },
+  live: { label: "LIVE locked", tone: "live" },
   blocked: { label: "BLOCKED", tone: "halted" },
-} as const satisfies Record<string, { label: string; tone: StatusTone }>;
+};
 
-/** Text label for an execution mode. Color is never the only signal. */
-export function ExecutionMode({ mode }: { mode: keyof typeof MODES }) {
+/**
+ * Text label for an execution lane. Colour is never the only signal.
+ *
+ * `armed` describes what the backend reports, not what the UI wishes:
+ *  - live + armed    → "LIVE armed · Approve per order"
+ *  - live + !armed   → "LIVE locked"
+ *  - testnet + armed → "TESTNET armed"
+ */
+export function ExecutionMode({
+  mode,
+  armed,
+  className,
+}: {
+  mode: ExecutionModeKind;
+  armed?: boolean;
+  className?: string;
+}) {
   const cfg = MODES[mode];
-  return <StatusBadge label={cfg.label} tone={cfg.tone} />;
+  let label = cfg.label;
+  let tone = cfg.tone;
+  if (mode === "live") {
+    label = armed ? "LIVE armed · Approve per order" : "LIVE locked";
+    tone = armed ? "live" : "neutral";
+  } else if (mode === "testnet") {
+    label = armed ? "TESTNET armed" : "TESTNET off";
+    tone = armed ? "info" : "neutral";
+  }
+  return <StatusBadge label={label} tone={tone} className={className} />;
 }

@@ -5,7 +5,6 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { LogoLoader } from "@/components/brand/LogoLoader";
-import { OperationsTemplate } from "@/components/design-system/templates";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -187,11 +186,7 @@ function PaperPageInner() {
   }
 
   return (
-    <OperationsTemplate
-      title="Paper Trading"
-      description="Read-only view of local simulated sessions. No exchange orders. SIMULATED / PAPER ONLY."
-      modes={["paper", "readonly"]}
-    >
+    <div className="space-y-4">
       {sessionId ? (
         <p className="mb-3 text-sm">
           <Link
@@ -205,7 +200,7 @@ function PaperPageInner() {
 
       {mode === "disabled" ? (
         <DataModeBanner
-          mode="demo"
+          mode="unavailable"
           notes={[
             "PAPER_READ_API_ENABLED is false — paper journal API disabled.",
             "Enable locally on FastAPI to inspect persisted 65A sessions. Broker auto-attach stays OFF.",
@@ -214,7 +209,7 @@ function PaperPageInner() {
       ) : null}
       {mode === "unavailable" ? (
         <DataModeBanner
-          mode="demo"
+          mode="unavailable"
           notes={[
             "Paper API unreachable. Start FastAPI on loopback with PAPER_READ_API_ENABLED=true.",
             error || "api_unavailable",
@@ -223,7 +218,7 @@ function PaperPageInner() {
       ) : null}
       {mode === "unsupported_futures" ? (
         <DataModeBanner
-          mode="demo"
+          mode="unavailable"
           notes={[
             "Futures / linear paper simulation is not supported in Milestone 1.",
             "65A broker supports spot-like unleveraged longs only. Switch category to Spot.",
@@ -232,7 +227,7 @@ function PaperPageInner() {
       ) : null}
       {status?.paper_read_api_enabled && category === "spot" ? (
         <DataModeBanner
-          mode="live"
+          mode="paper"
           notes={[
             "SIMULATED / PAPER ONLY — balances are virtual USDT, not Bybit funds.",
             status.note,
@@ -409,11 +404,11 @@ function PaperPageInner() {
           </Section>
         </>
       ) : null}
-    </OperationsTemplate>
+    </div>
   );
 }
 
-export default function PaperPage() {
+export function PaperArchive() {
   return (
     <Suspense fallback={<LogoLoader fullScreen label="Loading paper journal…" />}>
       <PaperPageInner />

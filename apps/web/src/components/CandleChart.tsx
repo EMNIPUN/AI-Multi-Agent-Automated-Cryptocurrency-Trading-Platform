@@ -36,26 +36,26 @@ export function CandleChart({
     const chart: IChartApi = createChart(ref.current, {
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: isLight ? "#475569" : "#94a3b8",
+        textColor: isLight ? "#526175" : "#A5AFBD",
         fontFamily: "IBM Plex Mono, monospace",
       },
       grid: {
-        vertLines: { color: isLight ? "rgba(148,163,184,0.35)" : "rgba(51,65,85,0.45)" },
-        horzLines: { color: isLight ? "rgba(148,163,184,0.35)" : "rgba(51,65,85,0.45)" },
+        vertLines: { color: isLight ? "rgba(217,224,234,0.9)" : "rgba(40,49,61,0.9)" },
+        horzLines: { color: isLight ? "rgba(217,224,234,0.9)" : "rgba(40,49,61,0.9)" },
       },
-      rightPriceScale: { borderColor: isLight ? "rgba(148,163,184,0.7)" : "rgba(51,65,85,0.8)" },
-      timeScale: { borderColor: isLight ? "rgba(148,163,184,0.7)" : "rgba(51,65,85,0.8)" },
+      rightPriceScale: { borderColor: isLight ? "rgba(191,202,216,0.9)" : "rgba(57,70,87,0.9)" },
+      timeScale: { borderColor: isLight ? "rgba(191,202,216,0.9)" : "rgba(57,70,87,0.9)" },
       width: ref.current.clientWidth,
       height: 320,
     });
     chartRef.current = chart;
 
     const series: ISeriesApi<"Candlestick"> = chart.addCandlestickSeries({
-      upColor: isLight ? "#0f766e" : "#10b981",
-      downColor: isLight ? "#dc2626" : "#ef4444",
+      upColor: isLight ? "#087A54" : "#20C997",
+      downColor: isLight ? "#B4233D" : "#EF6674",
       borderVisible: false,
-      wickUpColor: isLight ? "#0f766e" : "#10b981",
-      wickDownColor: isLight ? "#dc2626" : "#ef4444",
+      wickUpColor: isLight ? "#087A54" : "#20C997",
+      wickDownColor: isLight ? "#B4233D" : "#EF6674",
     });
 
     if (candles.length > 0) {
@@ -77,7 +77,7 @@ export function CandleChart({
         time: m.time as Time,
         position: m.action === "SELL" ? "aboveBar" : "belowBar",
         color:
-          m.action === "BUY" ? "#0f7a5f" : m.action === "SELL" ? "#b42318" : "#b45309",
+          m.action === "BUY" ? "#20C997" : m.action === "SELL" ? "#EF6674" : "#F7A600",
         shape:
           m.action === "BUY" ? "arrowUp" : m.action === "SELL" ? "arrowDown" : "circle",
         text: sample || m.sample ? `SAMPLE ${m.action}` : m.label || m.action,

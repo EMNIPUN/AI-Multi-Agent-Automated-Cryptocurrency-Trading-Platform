@@ -10,7 +10,12 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:events": "node scripts/check-events.mjs"
+    "test:events": "node scripts/check-events.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:public": "playwright test --project=unauthenticated",
+    "test:e2e:report": "playwright show-report",
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "build:isolated": "node scripts/build-isolated.mjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.2",
@@ -25,6 +30,7 @@
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.6",
     "@supabase/supabase-js": "^2.119.0",
+    "@tanstack/react-table": "^8.20.6",
     "@xyflow/react": "^12.3.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -42,6 +48,8 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.49.1",
     "@types/node": "22.10.2",
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2",

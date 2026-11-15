@@ -16,6 +16,9 @@ import {
 import { LogoLoader } from "@/components/brand/LogoLoader";
 import { DataModeBanner } from "@/components/shared/DataModeBanner";
 import { ResearchTemplate } from "@/components/design-system/templates";
+import { MetricCard as DsMetricCard } from "@/components/design-system/MetricCard";
+import { chartAxisProps, chartGridProps, chartLineProps, chartTooltipProps } from "@/lib/charts/recharts-theme";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,13 +82,11 @@ function MetricCard({
   valueClassName?: string;
 }) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className={`text-lg ${valueClassName ?? "font-mono"}`}>{value}</CardTitle>
-        {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
-      </CardHeader>
-    </Card>
+    <DsMetricCard
+      label={label}
+      value={<span className={cn("font-mono text-lg md:text-xl", valueClassName)}>{value}</span>}
+      hint={hint}
+    />
   );
 }
 
@@ -658,18 +659,11 @@ export function AnalyticsDashboard() {
                     <div className="h-72">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData}>
-                          <CartesianGrid stroke="hsl(217 25% 20%)" strokeDasharray="3 3" />
-                          <XAxis dataKey="t" stroke="hsl(215 16% 65%)" fontSize={11} />
-                          <YAxis
-                            stroke="hsl(215 16% 65%)"
-                            fontSize={12}
-                            domain={["auto", "auto"]}
-                          />
+                          <CartesianGrid {...chartGridProps} />
+                          <XAxis dataKey="t" {...chartAxisProps} minTickGap={48} />
+                          <YAxis {...chartAxisProps} width={64} domain={["auto", "auto"]} />
                           <Tooltip
-                            contentStyle={{
-                              background: "hsl(222 40% 10%)",
-                              border: "1px solid hsl(217 25% 22%)",
-                            }}
+                            {...chartTooltipProps}
                             formatter={(value: number, _n, item) => [
                               `${item?.payload?.raw ?? value} ${currency}`,
                               series === "marked" ? "Marked equity" : "Realized balance",
@@ -678,9 +672,7 @@ export function AnalyticsDashboard() {
                           <Line
                             type="linear"
                             dataKey="value"
-                            stroke="hsl(160 84% 45%)"
-                            strokeWidth={2}
-                            dot={false}
+                            {...chartLineProps}
                             connectNulls={false}
                           />
                         </LineChart>

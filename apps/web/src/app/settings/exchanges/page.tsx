@@ -5,7 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { DataModeBanner } from "@/components/shared/DataModeBanner";
+import { ExecutionMode } from "@/components/design-system";
+import { useExecutionState } from "@/providers/ExecutionStateProvider";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SettingsTemplate } from "@/components/design-system/templates";
 import { LogoLoader } from "@/components/brand/LogoLoader";
@@ -22,6 +23,7 @@ import {
 } from "@/lib/exchange/bindings";
 
 export default function ExchangeAccountsPage() {
+  const exec = useExecutionState();
   const { ready, session, configured } = useAuth();
   const [data, setData] = useState<ExchangeBindingListResponse | null>(null);
   const [error, setError] = useState("");
@@ -172,17 +174,18 @@ export default function ExchangeAccountsPage() {
   return (
     <SettingsTemplate
       title="Exchanges"
-      description="Secure Bybit account bindings — ownership enforced server-side. Live trading stays locked."
+      description="Bybit account bindings — ownership enforced server-side. A binding records which account a user owns; it is not permission to trade."
       modes={["readonly"]}
     >
-      <DataModeBanner
-        mode="demo"
-        notes={[
-          "Fixture / offline bindings only — not a live exchange connection.",
-          "Simulated Testnet verification is not a real Bybit connection.",
-          "Private wallet reads remain disabled. Mainnet activation locked.",
-        ]}
-      />
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground" role="status">
+        <span className="font-medium text-foreground">Execution lanes (server-reported):</span>
+        <ExecutionMode mode="testnet" armed={exec.data?.testnet === "armed"} />
+        <ExecutionMode mode="live" armed={exec.data?.live === "armed_approve_required"} />
+        <span>
+          Lanes are armed only by API server environment flags, never by a binding. API secrets stay on the server and are never shown here.
+          &quot;Simulate verify&quot; is a local check, not a Bybit connection.
+        </span>
+      </div>
 
       <Card className="mb-4 border-border/70 bg-card/80 shadow-none">
         <CardHeader className="pb-2">

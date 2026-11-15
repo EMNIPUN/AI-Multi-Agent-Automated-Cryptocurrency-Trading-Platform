@@ -1,73 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Activity, Radio, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Activity, Bot, Radio, ShieldAlert, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
-import { StatusBadge } from "@/components/design-system";
+import { ExecutionMode, StatusIndicator } from "@/components/design-system";
+import { useExecutionState } from "@/providers/ExecutionStateProvider";
 import { cn } from "@/lib/utils";
 
-type StatusPayload = {
-  state?: string;
-  enabled?: boolean;
-};
-
-type RiskPayload = {
-  halted?: boolean;
-  halt_reason?: string | null;
-  mode?: string;
-};
-
-type AutomationPayload = {
-  mode?: string;
-  testnet_submission_approved?: boolean;
-  testnet_trading_enabled?: boolean;
-  mainnet_trading_enabled?: boolean;
-  mainnet_execution_path_exists?: boolean;
-  agent_allow_live?: boolean;
-};
-
+/**
+ * Runtime execution strip. Every label comes from the shared execution-state
+ * subscription (automation gates, supervisor, risk, market). Nothing here is
+ * hardcoded to "locked" or "off".
+ */
 export function GlobalStatusBar({ className }: { className?: string }) {
-  const [status, setStatus] = useState<StatusPayload | null>(null);
-  const [risk, setRisk] = useState<RiskPayload | null>(null);
-  const [automation, setAutomation] = useState<AutomationPayload | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const [st, rk, auto] = await Promise.all([
-          fetch("/api/orchestrator/status", { cache: "no-store" }),
-          fetch("/api/orchestrator/risk", { cache: "no-store" }),
-          fetch("/api/automation/status", { cache: "no-store" }),
-        ]);
-        const statusBody = (await st.json().catch(() => ({}))) as StatusPayload;
-        const riskBody = (await rk.json().catch(() => ({}))) as RiskPayload;
-        const autoBody = (await auto.json().catch(() => ({}))) as AutomationPayload;
-        if (!cancelled) {
-          setStatus(statusBody);
-          setRisk(rk.ok ? riskBody : null);
-          setAutomation(auto.ok ? autoBody : null);
-        }
-      } catch {
-        if (!cancelled) {
-          setStatus(null);
-          setRisk(null);
-          setAutomation(null);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const state = String(status?.state || "UNKNOWN").toUpperCase();
-  const supervisorOn = Boolean(status?.enabled);
-  const testnetArmed = Boolean(
-    automation?.testnet_submission_approved && automation?.testnet_trading_enabled,
-  );
-  const liveArmed = Boolean(automation?.mainnet_execution_path_exists);
-  const halted = Boolean(risk?.halted);
+  const { data, error, loading } = useExecutionState();
+  const liveArmed = data?.live === "armed_approve_required";
+  const testnetArmed = data?.testnet === "armed";
+  const supervisor = data?.supervisorState ?? "UNKNOWN";
+  const marketKind = data ? (data.marketStale ? "STALE" : data.marketConnection) : "UNKNOWN";
 
   return (
     <div
@@ -77,38 +27,45 @@ export function GlobalStatusBar({ className }: { className?: string }) {
       )}
       role="status"
       aria-label="Global trading status"
+      aria-busy={loading || undefined}
     >
-      <StatusBadge label="PAPER" tone="paper" />
-      <StatusBadge
-        label={testnetArmed ? "TESTNET armed" : "TESTNET off"}
-        tone={testnetArmed ? "ok" : "neutral"}
-      />
-      <StatusBadge
-        label={liveArmed ? "LIVE approval required" : "LIVE off"}
-        tone={liveArmed ? "live" : "neutral"}
-      />
+      <ExecutionMode mode="paper" />
+      <ExecutionMode mode="testnet" armed={testnetArmed} />
+      <ExecutionMode mode="live" armed={liveArmed} />
       {liveArmed ? (
-        <span className="inline-flex items-center gap-1 text-muted-foreground">
+        <span className="inline-flex items-center gap-1 text-muted-foreground" title={`Bybit ${data?.bybitEnv ?? "unknown"} · every live order needs an explicit Approve in chat`}>
           <ShieldCheck className="h-3 w-3" aria-hidden />
-          Chat Approve required
+          Bybit {data?.bybitEnv ?? "unknown"}
         </span>
       ) : null}
-      {halted ? (
+      {data?.riskHalted ? (
         <span className="inline-flex items-center gap-1 text-destructive">
           <ShieldAlert className="h-3 w-3" aria-hidden />
-          Risk halt{risk?.halt_reason ? `: ${String(risk.halt_reason)}` : ""}
+          Risk halt{data.riskHaltReason ? `: ${String(data.riskHaltReason).replace(/_/g, " ")}` : ""}
         </span>
       ) : null}
       <span className="hidden h-3 w-px bg-border sm:block" aria-hidden />
       <span className="inline-flex items-center gap-1.5 text-muted-foreground">
         <Activity className="h-3 w-3" aria-hidden />
-        Supervisor {state}
-        {supervisorOn ? " · on" : " · off"}
+        <StatusIndicator
+          status={loading ? "UNKNOWN" : supervisor}
+          label={`Supervisor ${loading ? "…" : supervisor.toLowerCase()}`}
+          variant="inline"
+          pulse
+          detail={data ? (data.paperSupervisorEnabled ? (data.workerRunning ? "· worker on" : "· worker off") : "· feature off") : undefined}
+        />
       </span>
-      <span className="ml-auto inline-flex items-center gap-1 text-muted-foreground">
+      <span className="hidden items-center gap-1.5 text-muted-foreground md:inline-flex">
         <Radio className="h-3 w-3" aria-hidden />
-        Control · /orchestrator
+        <StatusIndicator status={marketKind} label={`Market ${String(marketKind).toLowerCase().replace(/_/g, " ")}`} variant="inline" />
       </span>
+      {error && !data ? (
+        <span className="text-destructive">API unreachable</span>
+      ) : null}
+      <Link href="/orchestrator" className="ml-auto inline-flex items-center gap-1 text-muted-foreground hover:text-foreground">
+        <Bot className="h-3 w-3" aria-hidden />
+        Control · /orchestrator
+      </Link>
     </div>
   );
 }

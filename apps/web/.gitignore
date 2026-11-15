@@ -1,6 +1,11 @@
 node_modules
 .next
+.next-*
 out
 coverage
 *.log
 .env*.local
+playwright/.auth
+test-results
+playwright-report
+blob-report

@@ -1,148 +1,118 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { BellOff, RefreshCw } from "lucide-react";
 
-import { LogoLoader } from "@/components/brand/LogoLoader";
-import { SettingsTemplate } from "@/components/design-system/templates";
-import { DataModeBanner } from "@/components/shared/DataModeBanner";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { localAgentFixture } from "@/lib/fixtures/agentSnapshot";
-import type { AgentSnapshot, ObservabilityEvent } from "@/lib/observability/types";
+import { SectionPanel } from "@/components/command-center";
+import { EmptyState, ErrorState, ReasonList, SettingsTemplate, StatusBadge, StatusIndicator } from "@/components/design-system";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePolledResource } from "@/hooks/use-polled-resource";
+import { getJson } from "@/lib/api/client";
+import { fetchAutonomySnapshot } from "@/lib/api/orchestrator";
+import { formatDateTime, formatRelative } from "@/lib/formatting/time";
+import { useExecutionState } from "@/providers/ExecutionStateProvider";
+import { cn } from "@/lib/utils";
 
-type Severity = "info" | "warning" | "danger";
+type Severity = "info" | "warning" | "critical";
+type Category = "risk" | "supervisor" | "news" | "system";
+type Notification = { id: string; at: number | null; severity: Severity; category: Category; title: string; detail: string | null; codes: string[] };
 
-const ALERT_TYPES: Record<string, { title: string; severity: Severity }> = {
-  "agent.error": { title: "Agent error", severity: "danger" },
-  "agent.halted": { title: "Agent halted", severity: "danger" },
-  "risk.blocked": { title: "Signal blocked", severity: "warning" },
-  "risk.halted": { title: "Risk halt", severity: "danger" },
-  "order.reconciliation_required": { title: "Reconciliation required", severity: "warning" },
-  "market.candle_rejected": { title: "Invalid market data", severity: "warning" },
-};
+type NewsAlert = { alert_id: string; headline?: string; severity?: string; symbols?: string[]; detected_at_ms?: number | null; status?: string; explanation?: string };
 
-function severityVariant(severity: Severity) {
-  if (severity === "danger") return "danger" as const;
-  if (severity === "warning") return "warning" as const;
-  return "outline" as const;
-}
-
-function formatLocal(iso: string) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return `${date.toLocaleString()} · UTC ${date.toISOString()}`;
-}
-
-function dedupe(events: ObservabilityEvent[]) {
-  const seen = new Set<string>();
-  const out: ObservabilityEvent[] = [];
-  for (const event of events) {
-    if (seen.has(event.event_id)) continue;
-    seen.add(event.event_id);
-    out.push(event);
-  }
-  return out;
-}
+const TONE: Record<Severity, "info" | "warn" | "danger"> = { info: "info", warning: "warn", critical: "danger" };
 
 export default function NotificationsPage() {
-  const [snap, setSnap] = useState<AgentSnapshot | null>(null);
-  const [mode, setMode] = useState<"fixture" | "unavailable">("fixture");
+  const exec = useExecutionState();
+  const autonomy = usePolledResource(fetchAutonomySnapshot, { intervalMs: 20_000 });
+  const alerts = usePolledResource((init) => getJson<{ enabled: boolean; items: NewsAlert[] }>("/api/news/alerts?limit=25", init), { intervalMs: 60_000 });
+  const [filter, setFilter] = useState<"all" | Category>("all");
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/observability/snapshot?source=sample", { cache: "no-store" });
-        if (!res.ok) throw new Error("fail");
-        const data = (await res.json()) as AgentSnapshot;
-        if (!cancelled) {
-          setSnap(data);
-          setMode("fixture");
-        }
-      } catch {
-        if (!cancelled) {
-          setSnap(localAgentFixture());
-          setMode("unavailable");
-        }
+  const items = useMemo<Notification[]>(() => {
+    const out: Notification[] = [];
+    const snap = autonomy.data;
+    if (snap) {
+      if (snap.risk.halted) out.push({ id: "risk-halt", at: snap.session.heartbeat_ms, severity: "critical", category: "risk", title: "Paper risk halt is active", detail: null, codes: [snap.risk.halt_reason ?? "HALTED"] });
+      else if (snap.risk.block_new_exposure) out.push({ id: "risk-block", at: snap.session.heartbeat_ms, severity: "warning", category: "risk", title: "New paper entries are blocked", detail: null, codes: [snap.risk.halt_reason ?? "block_new_exposure"] });
+      if (snap.session.last_error) out.push({ id: "sup-error", at: snap.session.heartbeat_ms, severity: "critical", category: "supervisor", title: "Supervisor reported an error", detail: null, codes: [snap.session.last_error] });
+      if (snap.enabled && !snap.worker_running) out.push({ id: "worker-off", at: snap.session.heartbeat_ms, severity: "warning", category: "supervisor", title: "Paper worker is offline", detail: "The supervisor feature is on but no worker loop is running.", codes: [] });
+      for (const d of snap.decision_queue.filter((d) => d.action === "BLOCKED" || (d.risk_verdict && d.risk_verdict !== "APPROVED")).slice(-10)) {
+        out.push({ id: `veto-${d.decision_id}`, at: d.timestamp_ms, severity: "info", category: "risk", title: `Entry vetoed · ${d.symbol} ${d.action}`, detail: d.explanation, codes: d.reason_codes || [] });
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const alerts = useMemo(() => {
-    if (!snap) return [];
-    const mapped = dedupe(snap.events).filter((event) => event.event_type in ALERT_TYPES);
-    const extra: ObservabilityEvent[] = [];
-    if (snap.heartbeat_stale || snap.agent_status === "OFFLINE" || snap.agent_status === "UNKNOWN") {
-      extra.push({
-        schema_version: snap.schema_version,
-        event_id: `heartbeat:${snap.generated_at}`,
-        event_type: "agent.error",
-        occurred_at: snap.heartbeat_at ?? snap.generated_at,
-        env_scope: snap.execution_mode,
-        execution_mode: snap.execution_mode,
-        message:
-          snap.agent_status === "UNKNOWN"
-            ? "Agent heartbeat is absent. Status is UNKNOWN."
-            : "Agent heartbeat is stale or offline.",
-        payload: {},
-      });
+      for (const e of snap.protective_events.filter((e) => e.protective).slice(-10)) {
+        out.push({ id: `prot-${e.event_id}`, at: e.created_ms, severity: "warning", category: "supervisor", title: `Protective exit · ${e.exit_reason ?? e.event_type}`, detail: typeof e.payload?.symbol === "string" ? String(e.payload.symbol) : null, codes: [] });
+      }
     }
-    return [...extra, ...mapped].sort((a, b) => (a.occurred_at < b.occurred_at ? 1 : -1));
-  }, [snap]);
+    if (exec.data) {
+      if (exec.data.marketStale) out.push({ id: "market-stale", at: exec.data.fetchedAt, severity: "warning", category: "system", title: "Public market data is stale", detail: null, codes: ["STALE_DATA"] });
+      if (exec.data.live === "armed_approve_required") out.push({ id: "live-armed", at: exec.data.fetchedAt, severity: "critical", category: "system", title: `LIVE lane armed on Bybit ${exec.data.bybitEnv}`, detail: "Every live order still requires an explicit Approve in the Orchestrator chat. Revoke by clearing AGENT_ALLOW_LIVE / MAINNET_TRADING_ENABLED.", codes: [] });
+    }
+    for (const a of alerts.data?.items ?? []) {
+      const sev = String(a.severity || "").toUpperCase();
+      out.push({ id: `news-${a.alert_id}`, at: a.detected_at_ms ?? null, severity: sev === "CRITICAL" ? "critical" : sev === "HIGH" ? "warning" : "info", category: "news", title: a.headline || "News alert", detail: [a.symbols?.join(", "), a.explanation].filter(Boolean).join(" · ") || null, codes: [] });
+    }
+    const filtered = filter === "all" ? out : out.filter((n) => n.category === filter);
+    return filtered.sort((a, b) => (b.at ?? 0) - (a.at ?? 0));
+  }, [autonomy.data, alerts.data, exec.data, filter]);
 
-  if (!snap) {
-    return <LogoLoader fullScreen label="Loading notifications…" />;
-  }
+  const loading = autonomy.loading && exec.loading;
 
   return (
     <SettingsTemplate
       title="Notifications"
-      description="Agent, risk, and reconciliation alerts derived from the current snapshot. Duplicate event IDs are dropped."
+      description="Risk halts, supervisor errors, protective exits, vetoes, news alerts and system warnings, from backend facts only. Nothing here is sample data."
       modes={["readonly"]}
+      actions={
+        <Button variant="outline" size="sm" className="rounded-full" onClick={() => { void autonomy.refresh(); void alerts.refresh(); }} disabled={autonomy.refreshing}>
+          <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", autonomy.refreshing && "animate-spin")} aria-hidden />
+          Refresh
+        </Button>
+      }
+      toolbar={
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+          <TabsList className="w-auto" aria-label="Notification category">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="risk">Risk</TabsTrigger>
+            <TabsTrigger value="supervisor">Supervisor</TabsTrigger>
+            <TabsTrigger value="news">News</TabsTrigger>
+            <TabsTrigger value="system">System</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      }
     >
-      <DataModeBanner
-        mode={mode}
-        notes={[
-          snap.data_mode === "live"
-            ? "Live private streams stay disabled."
-            : "Alerts come from the labeled SAMPLE snapshot, not a private user stream.",
-        ]}
-      />
-      {alerts.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">No alerts</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            The current snapshot has no error, halt, blocked-signal, or reconciliation events.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {alerts.map((event) => {
-            const meta = ALERT_TYPES[event.event_type] ?? {
-              title: event.event_type,
-              severity: "info" as const,
-            };
-            return (
-              <Card key={event.event_id}>
-                <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
-                  <CardTitle className="text-base">{meta.title}</CardTitle>
-                  <Badge variant={severityVariant(meta.severity)}>{meta.severity}</Badge>
-                </CardHeader>
-                <CardContent className="space-y-1 text-sm">
-                  <p>{event.message}</p>
-                  <p className="font-mono text-xs text-muted-foreground">{formatLocal(event.occurred_at)}</p>
-                  <p className="font-mono text-[11px] text-muted-foreground">{event.event_id}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <StatusIndicator status={alerts.data ? (alerts.data.enabled ? "RUNNING" : "STOPPED") : "UNKNOWN"} label={alerts.data ? (alerts.data.enabled ? "News alert engine on" : "News alert engine off") : "News alerts unknown"} />
+        <span>· Telegram and auto-collection follow the API configuration.</span>
+      </div>
+      {autonomy.error && !autonomy.data ? <ErrorState title="Supervisor feed unavailable" code={autonomy.error.code} at={autonomy.error.at} onRetry={() => void autonomy.refresh()} compact /> : null}
+
+      <SectionPanel title={`${items.length} notification${items.length === 1 ? "" : "s"}`} description="Newest first. Duplicates are collapsed by id.">
+        {loading ? (
+          <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-2xl" />)}</div>
+        ) : items.length === 0 ? (
+          <EmptyState title="No notifications" badge="Clear" icon={<BellOff className="h-4 w-4 text-muted-foreground" aria-hidden />} description="No halts, errors, vetoes, protective exits or alerts are reported right now." />
+        ) : (
+          <ol className="space-y-2">
+            {items.map((n) => (
+              <li key={n.id} className="rounded-2xl border border-border bg-muted/30 px-4 py-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{n.title}</p>
+                    {n.detail ? <p className="mt-1 text-xs text-muted-foreground">{n.detail}</p> : null}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <StatusBadge label={n.severity} tone={TONE[n.severity]} />
+                    <StatusBadge label={n.category} tone="neutral" />
+                  </div>
+                </div>
+                {n.codes.length ? <ReasonList codes={n.codes} compact max={3} className="mt-2" /> : null}
+                <p className="mt-2 font-mono text-[10px] text-muted-foreground" title={formatDateTime(n.at)}>{formatRelative(n.at)} · {n.id}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </SectionPanel>
     </SettingsTemplate>
   );
 }

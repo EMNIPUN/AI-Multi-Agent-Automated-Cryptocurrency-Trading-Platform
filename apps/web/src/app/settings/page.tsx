@@ -6,13 +6,15 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SettingsTemplate } from "@/components/design-system/templates";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { DataModeBanner } from "@/components/shared/DataModeBanner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExecutionMode, StatusIndicator } from "@/components/design-system";
 import { usePersistedDensity, usePersistedTheme } from "@/lib/theme";
+import { useExecutionState } from "@/providers/ExecutionStateProvider";
 
 export default function SettingsPage() {
+  const exec = useExecutionState();
   const { user, session, configured, signOut, ready } = useAuth();
   const router = useRouter();
   const { light, setLight } = usePersistedTheme();
@@ -29,13 +31,6 @@ export default function SettingsPage() {
       description="Appearance, session, and connection health. Frontend settings never bypass backend gates."
       modes={["readonly"]}
     >
-      <DataModeBanner
-        mode="demo"
-        notes={[
-          "No secrets in the client bundle.",
-          "Private catalog reads remain gated (PRIVATE_DATA_READS_ENABLED=false).",
-        ]}
-      />
       <Card className="mb-4">
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
@@ -139,20 +134,24 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2">
-              <span>FastAPI</span>
-              <Badge variant="secondary">127.0.0.1:8000</Badge>
+              <span>FastAPI (server-side proxy)</span>
+              <StatusIndicator status={exec.loading ? "UNKNOWN" : exec.data ? "OK" : "FAILED"} label={exec.loading ? "Checking" : exec.data ? "Reachable" : "Unreachable"} />
             </div>
             <div className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2">
-              <span>Live SSE</span>
-              <Badge variant="warning">Disabled</Badge>
+              <span>Paper supervisor</span>
+              <StatusIndicator status={exec.data?.supervisorState ?? "UNKNOWN"} label={exec.data ? `${exec.data.supervisorState.toLowerCase()} · feature ${exec.data.paperSupervisorEnabled ? "on" : "off"}` : "Unknown"} />
             </div>
             <div className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2">
-              <span>Private wallet reads</span>
-              <Badge variant="warning">Kill switch off</Badge>
+              <span>Testnet lane</span>
+              <ExecutionMode mode="testnet" armed={exec.data?.testnet === "armed"} />
             </div>
             <div className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2">
-              <span>Trading HTTP</span>
-              <Badge variant="danger">Off</Badge>
+              <span>Live lane</span>
+              <ExecutionMode mode="live" armed={exec.data?.live === "armed_approve_required"} />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2">
+              <span>Public market data</span>
+              <StatusIndicator status={exec.data ? (exec.data.marketStale ? "STALE" : exec.data.marketConnection) : "UNKNOWN"} label={exec.data ? exec.data.marketConnection.replace(/_/g, " ") : "Unknown"} />
             </div>
             <p className="pt-2 text-xs text-muted-foreground">
               Browser session checks never authorize private API data. FastAPI verifies JWTs
